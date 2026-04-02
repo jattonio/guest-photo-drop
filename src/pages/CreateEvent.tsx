@@ -9,10 +9,15 @@ import { toast } from 'sonner';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [hostName, setHostName] = useState('');
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/auth');
+  }, [user, authLoading, navigate]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
