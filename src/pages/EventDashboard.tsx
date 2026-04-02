@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Copy, Download, Images, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getEventById, getEventPhotos, EventData, EventPhoto } from '@/lib/eventStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import PhotoGallery from '@/components/PhotoGallery';
 import { toast } from 'sonner';
@@ -11,21 +12,27 @@ import { toast } from 'sonner';
 const EventDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [event, setEvent] = useState<EventData | null>(null);
   const [photos, setPhotos] = useState<EventPhoto[]>([]);
   const [tab, setTab] = useState<'qr' | 'gallery'>('qr');
 
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
     if (!id) return;
     getEventById(id).then(e => {
-      if (e) {
+      if (e && (e as any).user_id === user.id) {
         setEvent(e);
         getEventPhotos(e.id).then(setPhotos);
       } else {
-        navigate('/');
+        navigate('/my-events');
       }
     });
-  }, [id, navigate]);
+  }, [id, navigate, user, authLoading]);
 
   // Realtime
   useEffect(() => {

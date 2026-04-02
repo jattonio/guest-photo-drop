@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Camera, PartyPopper, QrCode, ArrowRight } from 'lucide-react';
+import { Camera, PartyPopper, QrCode, ArrowRight, LogIn, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { getEventByCode } from '@/lib/eventStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import heroImage from '@/assets/hero-party.jpg';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, signOut, loading } = useAuth();
   const [code, setCode] = useState('');
   const [joining, setJoining] = useState(false);
 
@@ -32,8 +34,48 @@ const Index = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    await signOut();
+    toast.success('Sesión cerrada');
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Auth bar */}
+      {!loading && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+          {user ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/my-events')}
+                className="bg-background/80 backdrop-blur border-gold/30"
+              >
+                <User className="w-4 h-4 mr-1" /> Mis eventos
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleSignOut}
+                className="bg-background/80 backdrop-blur"
+              >
+                <LogOut className="w-4 h-4" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigate('/auth')}
+              className="bg-background/80 backdrop-blur border-gold/30"
+            >
+              <LogIn className="w-4 h-4 mr-1" /> Iniciar sesión
+            </Button>
+          )}
+        </div>
+      )}
+
       <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
         <img src={heroImage} alt="Fiesta elegante" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/30 via-foreground/20 to-background" />
@@ -85,11 +127,11 @@ const Index = () => {
             ¿Organizas una fiesta o evento? Crea tu espacio para que tus invitados compartan fotos
           </p>
           <Button
-            onClick={() => navigate('/create')}
+            onClick={() => user ? navigate('/create') : navigate('/auth')}
             variant="outline"
             className="w-full border-gold/30 text-foreground hover:bg-cream hover:border-gold"
           >
-            Crear evento
+            {user ? 'Crear evento' : 'Inicia sesión para crear'}
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
         </div>

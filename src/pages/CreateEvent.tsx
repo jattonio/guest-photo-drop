@@ -1,17 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, PartyPopper, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createEvent } from '@/lib/eventStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [hostName, setHostName] = useState('');
   const [creating, setCreating] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/auth');
+  }, [user, authLoading, navigate]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
@@ -20,7 +26,7 @@ const CreateEvent = () => {
     }
     setCreating(true);
     try {
-      const event = await createEvent(name.trim(), date, hostName.trim());
+      const event = await createEvent(name.trim(), date, hostName.trim(), user!.id);
       toast.success('¡Evento creado!');
       navigate(`/dashboard/${event.id}`);
     } catch (err) {
