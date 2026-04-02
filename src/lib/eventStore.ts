@@ -100,6 +100,60 @@ export async function uploadPhoto(eventId: string, file: File): Promise<string> 
   return data.publicUrl;
 }
 
+export interface PhotoReaction {
+  id: string;
+  photo_id: string;
+  emoji: string;
+  guest_id: string;
+  created_at: string;
+}
+
+export async function getPhotoReactions(photoIds: string[]): Promise<Record<string, PhotoReaction[]>> {
+  if (photoIds.length === 0) return {};
+  const { data, error } = await supabase
+    .from('photo_reactions')
+    .select('*')
+    .in('photo_id', photoIds);
+  if (error) throw error;
+  const map: Record<string, PhotoReaction[]> = {};
+  for (const r of data || []) {
+    if (!map[r.photo_id]) map[r.photo_id] = [];
+    map[r.photo_id].push(r);
+  }
+  return map;
+}
+
+export async function toggleReaction(photoId: string, emoji: string, guestId: string): Promise<void> {
+  // Check existing
+  const { data: existing } = await supabase
+    .from('photo_reactions')
+    .select('id, emoji')
+    .eq('photo_id', photoId)
+    .eq('guest_id', guestId)
+    .maybeSingle();
+
+  if (existing) {
+    if (existing.emoji === emoji) {
+      // Remove reaction
+      await supabase.from('photo_reactions').delete().eq('id', existing.id);
+    } else {
+      // Change emoji
+      await supabase.from('photo_reactions').update({ emoji }).eq('id', existing.id);
+    }
+  } else {
+    await supabase.from('photo_reactions').insert({ photo_id: photoId, emoji, guest_id: guestId });
+  }
+}
+
+export function getGuestId(): string {
+  let id = localStorage.getItem('guest_id');
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem('guest_id', id);
+  }
+  return id;
+}
+
 export function getPhotoUrl(filePath: string): string {
   // If it's already a full URL, return as-is
   if (filePath.startsWith('http')) return filePath;
