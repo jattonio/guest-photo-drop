@@ -11,21 +11,29 @@ const CreateEvent = () => {
   const [name, setName] = useState('');
   const [date, setDate] = useState('');
   const [hostName, setHostName] = useState('');
+  const [creating, setCreating] = useState(false);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) {
       toast.error('Ingresa el nombre del evento');
       return;
     }
-    const event = createEvent(name.trim(), date, hostName.trim());
-    toast.success('¡Evento creado!');
-    navigate(`/dashboard/${event.id}`);
+    setCreating(true);
+    try {
+      const event = await createEvent(name.trim(), date, hostName.trim());
+      toast.success('¡Evento creado!');
+      navigate(`/dashboard/${event.id}`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al crear el evento');
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="max-w-md mx-auto px-6 py-8">
-        {/* Header */}
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-8"
@@ -47,37 +55,23 @@ const CreateEvent = () => {
         <div className="bg-card rounded-2xl p-6 shadow-lg border border-border space-y-5">
           <div>
             <label className="block text-sm font-medium mb-2">Nombre del evento *</label>
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ej: Boda de Ana y Carlos"
-            />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej: Boda de Ana y Carlos" />
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-2">Fecha</label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
+            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
-
           <div>
             <label className="block text-sm font-medium mb-2">Tu nombre</label>
-            <Input
-              value={hostName}
-              onChange={(e) => setHostName(e.target.value)}
-              placeholder="Nombre del organizador"
-            />
+            <Input value={hostName} onChange={(e) => setHostName(e.target.value)} placeholder="Nombre del organizador" />
           </div>
-
           <Button
             onClick={handleCreate}
+            disabled={creating}
             className="w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
           >
             <Sparkles className="w-5 h-5 mr-2" />
-            Crear evento
+            {creating ? 'Creando...' : 'Crear evento'}
           </Button>
         </div>
       </div>

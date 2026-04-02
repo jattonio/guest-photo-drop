@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Camera, ImagePlus, X, Upload, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { addPhotosToEvent, EventPhoto } from '@/lib/eventStore';
+import { uploadPhoto, addPhotoRecord } from '@/lib/eventStore';
 import { toast } from 'sonner';
 
 interface PhotoUploaderProps {
@@ -10,9 +10,14 @@ interface PhotoUploaderProps {
   onPhotosUploaded?: () => void;
 }
 
+interface FilePreview {
+  file: File;
+  previewUrl: string;
+}
+
 const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
   const [guestName, setGuestName] = useState('');
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -20,24 +25,20 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
 
   const handleFiles = useCallback((files: FileList | null) => {
     if (!files) return;
-    const newPreviews: string[] = [];
+    const newPreviews: FilePreview[] = [];
     Array.from(files).forEach(file => {
       if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-          newPreviews.push(e.target.result as string);
-          if (newPreviews.length === files.length) {
-            setPreviews(prev => [...prev, ...newPreviews]);
-          }
-        }
-      };
-      reader.readAsDataURL(file);
+      newPreviews.push({ file, previewUrl: URL.createObjectURL(file) });
     });
+    setPreviews(prev => [...prev, ...newPreviews]);
   }, []);
 
   const removePreview = (index: number) => {
-    setPreviews(prev => prev.filter((_, i) => i !== index));
+    setPreviews(prev => {
+      const removed = prev[index];
+      URL.revokeObjectURL(removed.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleUpload = async () => {
@@ -47,31 +48,33 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
     }
 
     setUploading(true);
-    // Simulate upload delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    const name = guestName.trim() || 'Invitado anónimo';
 
-    const photos: EventPhoto[] = previews.map(dataUrl => ({
-      id: crypto.randomUUID(),
-      dataUrl,
-      guestName: guestName || 'Invitado anónimo',
-      timestamp: Date.now(),
-    }));
+    try {
+      for (const { file } of previews) {
+        const publicUrl = await uploadPhoto(eventId, file);
+        await addPhotoRecord(eventId, publicUrl, name);
+      }
 
-    addPhotosToEvent(eventId, photos);
-    setUploading(false);
-    setUploaded(true);
-    toast.success(`¡${photos.length} foto${photos.length > 1 ? 's' : ''} subida${photos.length > 1 ? 's' : ''}!`);
-    onPhotosUploaded?.();
+      setUploaded(true);
+      toast.success(`¡${previews.length} foto${previews.length > 1 ? 's' : ''} subida${previews.length > 1 ? 's' : ''}!`);
+      onPhotosUploaded?.();
 
-    setTimeout(() => {
-      setPreviews([]);
-      setUploaded(false);
-    }, 2000);
+      setTimeout(() => {
+        previews.forEach(p => URL.revokeObjectURL(p.previewUrl));
+        setPreviews([]);
+        setUploaded(false);
+      }, 2000);
+    } catch (err) {
+      console.error('Upload error:', err);
+      toast.error('Error al subir las fotos. Intenta de nuevo.');
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* Guest name */}
       <div>
         <label className="block text-sm font-medium text-muted-foreground mb-2">
           Tu nombre (opcional)
@@ -84,7 +87,6 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
         />
       </div>
 
-      {/* Upload buttons */}
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => cameraInputRef.current?.click()}
@@ -108,7 +110,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
       />
       <input
         ref={fileInputRef}
@@ -116,19 +118,18 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
         accept="image/*"
         multiple
         className="hidden"
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
       />
 
-      {/* Previews */}
       {previews.length > 0 && (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
             {previews.length} foto{previews.length > 1 ? 's' : ''} seleccionada{previews.length > 1 ? 's' : ''}
           </p>
           <div className="grid grid-cols-3 gap-2">
-            {previews.map((src, i) => (
+            {previews.map((p, i) => (
               <div key={i} className="relative aspect-square rounded-lg overflow-hidden group">
-                <img src={src} alt="" className="w-full h-full object-cover" />
+                <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
                 <button
                   onClick={() => removePreview(i)}
                   className="absolute top-1 right-1 w-6 h-6 bg-foreground/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"

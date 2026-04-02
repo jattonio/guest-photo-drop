@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Camera, Images } from 'lucide-react';
-import { getEventByCode, EventData, getEventById } from '@/lib/eventStore';
+import { getEventByCode, getEventPhotos, EventData, EventPhoto } from '@/lib/eventStore';
+import { supabase } from '@/integrations/supabase/client';
 import PhotoUploader from '@/components/PhotoUploader';
 import PhotoGallery from '@/components/PhotoGallery';
 
@@ -9,20 +10,50 @@ const GuestView = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<EventData | null>(null);
+  const [photos, setPhotos] = useState<EventPhoto[]>([]);
   const [tab, setTab] = useState<'upload' | 'gallery'>('upload');
 
   useEffect(() => {
-    if (code) {
-      const e = getEventByCode(code);
-      if (e) setEvent(e);
-      else navigate('/');
-    }
+    if (!code) return;
+    getEventByCode(code).then(e => {
+      if (e) {
+        setEvent(e);
+        getEventPhotos(e.id).then(setPhotos);
+      } else {
+        navigate('/');
+      }
+    });
   }, [code, navigate]);
 
-  const refreshEvent = () => {
+  // Realtime subscription for new photos
+  useEffect(() => {
+    if (!event) return;
+
+    const channel = supabase
+      .channel(`photos-${event.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'event_photos',
+          filter: `event_id=eq.${event.id}`,
+        },
+        (payload) => {
+          const newPhoto = payload.new as EventPhoto;
+          setPhotos(prev => [newPhoto, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [event]);
+
+  const refreshPhotos = () => {
     if (event) {
-      const e = getEventById(event.id);
-      if (e) setEvent(e);
+      getEventPhotos(event.id).then(setPhotos);
     }
   };
 
@@ -31,7 +62,6 @@ const GuestView = () => {
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="max-w-md mx-auto px-6 py-8">
-        {/* Header */}
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -43,14 +73,13 @@ const GuestView = () => {
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🎉</div>
           <h1 className="font-display text-2xl font-bold">{event.name}</h1>
-          {event.hostName && (
+          {event.host_name && (
             <p className="text-sm text-muted-foreground mt-1">
-              Organiza: {event.hostName}
+              Organiza: {event.host_name}
             </p>
           )}
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-6 justify-center">
           <button
             onClick={() => setTab('upload')}
@@ -64,7 +93,7 @@ const GuestView = () => {
             Subir fotos
           </button>
           <button
-            onClick={() => { setTab('gallery'); refreshEvent(); }}
+            onClick={() => setTab('gallery')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'gallery'
                 ? 'bg-gradient-gold text-primary-foreground shadow-gold'
@@ -72,19 +101,18 @@ const GuestView = () => {
             }`}
           >
             <Images className="w-4 h-4" />
-            Ver galería ({event.photos.length})
+            Ver galería ({photos.length})
           </button>
         </div>
 
-        {/* Content */}
         {tab === 'upload' && (
           <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
-            <PhotoUploader eventId={event.id} onPhotosUploaded={refreshEvent} />
+            <PhotoUploader eventId={event.id} onPhotosUploaded={refreshPhotos} />
           </div>
         )}
 
         {tab === 'gallery' && (
-          <PhotoGallery photos={event.photos} />
+          <PhotoGallery photos={photos} />
         )}
       </div>
     </div>

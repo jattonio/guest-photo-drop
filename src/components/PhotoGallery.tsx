@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { EventPhoto } from '@/lib/eventStore';
+import { EventPhoto, getPhotoUrl } from '@/lib/eventStore';
 import { X, Download } from 'lucide-react';
 
 interface PhotoGalleryProps {
@@ -19,12 +19,10 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
     );
   }
 
-  const sortedPhotos = [...photos].sort((a, b) => b.timestamp - a.timestamp);
-
   return (
     <>
       <div className="columns-2 sm:columns-3 gap-2 space-y-2">
-        {sortedPhotos.map((photo) => (
+        {photos.map((photo) => (
           <div
             key={photo.id}
             className="break-inside-avoid cursor-pointer group"
@@ -32,20 +30,19 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           >
             <div className="relative rounded-lg overflow-hidden">
               <img
-                src={photo.dataUrl}
-                alt={`Foto de ${photo.guestName}`}
+                src={getPhotoUrl(photo.file_path)}
+                alt={`Foto de ${photo.guest_name}`}
                 className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
                 loading="lazy"
               />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-xs text-background font-medium truncate">{photo.guestName}</p>
+                <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Lightbox */}
       {selectedPhoto && (
         <div
           className="fixed inset-0 z-50 bg-foreground/90 flex items-center justify-center p-4"
@@ -59,15 +56,17 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           </button>
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             <img
-              src={selectedPhoto.dataUrl}
+              src={getPhotoUrl(selectedPhoto.file_path)}
               alt=""
               className="max-w-full max-h-[85vh] object-contain rounded-lg"
             />
             <div className="mt-3 text-center">
-              <p className="text-background/90 text-sm">{selectedPhoto.guestName}</p>
+              <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <a
-                href={selectedPhoto.dataUrl}
+                href={getPhotoUrl(selectedPhoto.file_path)}
                 download={`foto-${selectedPhoto.id}.jpg`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-gold text-sm mt-1 hover:underline"
               >
                 <Download className="w-4 h-4" />

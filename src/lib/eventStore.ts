@@ -1,35 +1,20 @@
-// Simple in-memory event store (will be replaced with backend later)
+import { supabase } from '@/integrations/supabase/client';
 
 export interface EventPhoto {
   id: string;
-  dataUrl: string;
-  guestName: string;
-  timestamp: number;
+  file_path: string;
+  guest_name: string;
+  created_at: string;
+  event_id: string;
 }
 
 export interface EventData {
   id: string;
   name: string;
   date: string;
-  hostName: string;
+  host_name: string;
   code: string;
-  photos: EventPhoto[];
-  createdAt: number;
-}
-
-const STORAGE_KEY = 'snapfiesta_events';
-
-function getEvents(): EventData[] {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveEvents(events: EventData[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+  created_at: string;
 }
 
 export function generateCode(): string {
@@ -41,39 +26,82 @@ export function generateCode(): string {
   return code;
 }
 
-export function createEvent(name: string, date: string, hostName: string): EventData {
-  const events = getEvents();
-  const event: EventData = {
-    id: crypto.randomUUID(),
-    name,
-    date,
-    hostName,
-    code: generateCode(),
-    photos: [],
-    createdAt: Date.now(),
-  };
-  events.push(event);
-  saveEvents(events);
-  return event;
+export async function createEvent(name: string, date: string, hostName: string): Promise<EventData> {
+  const code = generateCode();
+  const { data, error } = await supabase
+    .from('events')
+    .insert({ name, date, host_name: hostName, code })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
 }
 
-export function getEventByCode(code: string): EventData | undefined {
-  return getEvents().find(e => e.code.toUpperCase() === code.toUpperCase());
+export async function getEventByCode(code: string): Promise<EventData | null> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .ilike('code', code)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }
 
-export function getEventById(id: string): EventData | undefined {
-  return getEvents().find(e => e.id === id);
+export async function getEventById(id: string): Promise<EventData | null> {
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error) throw error;
+  return data;
 }
 
-export function addPhotosToEvent(eventId: string, photos: EventPhoto[]): void {
-  const events = getEvents();
-  const event = events.find(e => e.id === eventId);
-  if (event) {
-    event.photos.push(...photos);
-    saveEvents(events);
-  }
+export async function getEventPhotos(eventId: string): Promise<EventPhoto[]> {
+  const { data, error } = await supabase
+    .from('event_photos')
+    .select('*')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
 }
 
-export function getAllEvents(): EventData[] {
-  return getEvents();
+export async function addPhotoRecord(eventId: string, filePath: string, guestName: string): Promise<EventPhoto> {
+  const { data, error } = await supabase
+    .from('event_photos')
+    .insert({ event_id: eventId, file_path: filePath, guest_name: guestName })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function uploadPhoto(eventId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop() || 'jpg';
+  const fileName = `${eventId}/${crypto.randomUUID()}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from('event-photos')
+    .upload(fileName, file, { contentType: file.type });
+
+  if (error) throw error;
+  
+  const { data } = supabase.storage
+    .from('event-photos')
+    .getPublicUrl(fileName);
+
+  return data.publicUrl;
+}
+
+export function getPhotoUrl(filePath: string): string {
+  // If it's already a full URL, return as-is
+  if (filePath.startsWith('http')) return filePath;
+  const { data } = supabase.storage.from('event-photos').getPublicUrl(filePath);
+  return data.publicUrl;
 }
