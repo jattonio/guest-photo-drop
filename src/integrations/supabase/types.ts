@@ -54,6 +54,7 @@ export type Database = {
           host_name: string
           id: string
           name: string
+          user_id: string | null
         }
         Insert: {
           code: string
@@ -62,6 +63,7 @@ export type Database = {
           host_name?: string
           id?: string
           name: string
+          user_id?: string | null
         }
         Update: {
           code?: string
@@ -70,6 +72,25 @@ export type Database = {
           host_name?: string
           id?: string
           name?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
         }
         Relationships: []
       }
