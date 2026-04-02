@@ -26,7 +26,7 @@ const CreateEvent = () => {
     }
     setCreating(true);
     try {
-      const event = await createEvent(name.trim(), date, hostName.trim());
+      const event = await createEvent(name.trim(), date, hostName.trim(), user!.id);
       toast.success('¡Evento creado!');
       navigate(`/dashboard/${event.id}`);
     } catch (err) {

@@ -26,11 +26,11 @@ export function generateCode(): string {
   return code;
 }
 
-export async function createEvent(name: string, date: string, hostName: string): Promise<EventData> {
+export async function createEvent(name: string, date: string, hostName: string, userId: string): Promise<EventData> {
   const code = generateCode();
   const { data, error } = await supabase
     .from('events')
-    .insert({ name, date, host_name: hostName, code })
+    .insert({ name, date, host_name: hostName, code, user_id: userId })
     .select()
     .single();
 
