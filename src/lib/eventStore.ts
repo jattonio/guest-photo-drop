@@ -14,6 +14,7 @@ export interface EventData {
   date: string;
   host_name: string;
   code: string;
+  user_id: string | null;
   created_at: string;
 }
 
