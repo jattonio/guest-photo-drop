@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, PartyPopper, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createEvent } from '@/lib/eventStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
 const CreateEvent = () => {
