@@ -1,16 +1,61 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { EventPhoto, getPhotoUrl } from '@/lib/eventStore';
+import { EventPhoto, PhotoReaction, getPhotoUrl, getPhotoReactions, toggleReaction, getGuestId } from '@/lib/eventStore';
+import { supabase } from '@/integrations/supabase/client';
 import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PhotoGalleryProps {
   photos: EventPhoto[];
 }
 
+const REACTION_EMOJIS = ['❤️', '😍', '🔥', '😂', '👏'];
+
 const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [reactions, setReactions] = useState<Record<string, PhotoReaction[]>>({});
   const touchStartX = useRef<number | null>(null);
+  const guestId = useRef(getGuestId());
 
   const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null;
+
+  // Load reactions
+  useEffect(() => {
+    if (photos.length === 0) return;
+    const ids = photos.map(p => p.id);
+    getPhotoReactions(ids).then(setReactions);
+  }, [photos]);
+
+  // Realtime reactions
+  useEffect(() => {
+    if (photos.length === 0) return;
+    const channel = supabase
+      .channel('photo-reactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'photo_reactions' }, () => {
+        const ids = photos.map(p => p.id);
+        getPhotoReactions(ids).then(setReactions);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [photos]);
+
+  const handleReaction = async (photoId: string, emoji: string) => {
+    await toggleReaction(photoId, emoji, guestId.current);
+    const ids = photos.map(p => p.id);
+    getPhotoReactions(ids).then(setReactions);
+  };
+
+  const getReactionSummary = (photoId: string) => {
+    const list = reactions[photoId] || [];
+    const counts: Record<string, number> = {};
+    for (const r of list) {
+      counts[r.emoji] = (counts[r.emoji] || 0) + 1;
+    }
+    return counts;
+  };
+
+  const getMyReaction = (photoId: string) => {
+    const list = reactions[photoId] || [];
+    return list.find(r => r.guest_id === guestId.current)?.emoji || null;
+  };
 
   const goNext = useCallback(() => {
     setSelectedIndex(prev => (prev !== null && prev < photos.length - 1 ? prev + 1 : prev));
@@ -58,25 +103,36 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   return (
     <>
       <div className="columns-2 sm:columns-3 gap-2 space-y-2">
-        {photos.map((photo, index) => (
-          <div
-            key={photo.id}
-            className="break-inside-avoid cursor-pointer group"
-            onClick={() => setSelectedIndex(index)}
-          >
-            <div className="relative rounded-lg overflow-hidden">
-              <img
-                src={getPhotoUrl(photo.file_path)}
-                alt={`Foto de ${photo.guest_name}`}
-                className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-              />
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
+        {photos.map((photo, index) => {
+          const summary = getReactionSummary(photo.id);
+          const totalReactions = Object.values(summary).reduce((a, b) => a + b, 0);
+          return (
+            <div
+              key={photo.id}
+              className="break-inside-avoid cursor-pointer group"
+              onClick={() => setSelectedIndex(index)}
+            >
+              <div className="relative rounded-lg overflow-hidden">
+                <img
+                  src={getPhotoUrl(photo.file_path)}
+                  alt={`Foto de ${photo.guest_name}`}
+                  className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  loading="lazy"
+                />
+                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
+                </div>
+                {totalReactions > 0 && (
+                  <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-foreground/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                    {Object.entries(summary).slice(0, 3).map(([emoji, count]) => (
+                      <span key={emoji} className="text-xs">{emoji}{count > 1 ? <span className="text-background text-[10px]">{count}</span> : null}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {selectedPhoto && selectedIndex !== null && (
@@ -115,9 +171,30 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             <img
               src={getPhotoUrl(selectedPhoto.file_path)}
               alt=""
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
-            <div className="mt-3 text-center">
+            {/* Reactions bar */}
+            <div className="mt-3 flex justify-center gap-1">
+              {REACTION_EMOJIS.map(emoji => {
+                const isActive = getMyReaction(selectedPhoto.id) === emoji;
+                const count = (reactions[selectedPhoto.id] || []).filter(r => r.emoji === emoji).length;
+                return (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReaction(selectedPhoto.id, emoji)}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-sm transition-all ${
+                      isActive
+                        ? 'bg-primary/30 ring-2 ring-primary scale-110'
+                        : 'bg-background/15 hover:bg-background/25'
+                    }`}
+                  >
+                    <span>{emoji}</span>
+                    {count > 0 && <span className="text-background text-xs">{count}</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-center">
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
               <a

@@ -76,6 +76,38 @@ export type Database = {
         }
         Relationships: []
       }
+      photo_reactions: {
+        Row: {
+          created_at: string
+          emoji: string
+          guest_id: string
+          id: string
+          photo_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji: string
+          guest_id: string
+          id?: string
+          photo_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string
+          guest_id?: string
+          id?: string
+          photo_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photo_reactions_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "event_photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
