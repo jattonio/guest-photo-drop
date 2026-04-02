@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Copy, Download, Images, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getEventById, getEventPhotos, EventData, EventPhoto } from '@/lib/eventStore';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import PhotoGallery from '@/components/PhotoGallery';
 import { toast } from 'sonner';
