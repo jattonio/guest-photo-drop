@@ -10,46 +10,45 @@ import heroImage from '@/assets/hero-party.jpg';
 const Index = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState('');
+  const [joining, setJoining] = useState(false);
 
-  const handleJoinEvent = () => {
+  const handleJoinEvent = async () => {
     if (!code.trim()) {
       toast.error('Ingresa el código del evento');
       return;
     }
-    const event = getEventByCode(code.trim());
-    if (event) {
-      navigate(`/event/${event.code}`);
-    } else {
-      toast.error('Código no encontrado. Verifica e intenta de nuevo.');
+    setJoining(true);
+    try {
+      const event = await getEventByCode(code.trim());
+      if (event) {
+        navigate(`/event/${event.code}`);
+      } else {
+        toast.error('Código no encontrado. Verifica e intenta de nuevo.');
+      }
+    } catch {
+      toast.error('Error al buscar el evento');
+    } finally {
+      setJoining(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
       <div className="relative h-[60vh] min-h-[400px] overflow-hidden">
-        <img
-          src={heroImage}
-          alt="Fiesta elegante"
-          className="w-full h-full object-cover"
-        />
+        <img src={heroImage} alt="Fiesta elegante" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/30 via-foreground/20 to-background" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
           <div className="animate-float mb-4">
             <Camera className="w-12 h-12 text-gold" />
           </div>
-          <h1 className="font-display text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">
-            SnapFiesta
-          </h1>
+          <h1 className="font-display text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">SnapFiesta</h1>
           <p className="text-background/90 text-lg md:text-xl max-w-md drop-shadow">
             Captura cada momento de tu evento. Todos los recuerdos, en un solo lugar.
           </p>
         </div>
       </div>
 
-      {/* Actions */}
       <div className="max-w-md mx-auto px-6 -mt-12 relative z-10 space-y-6 pb-12">
-        {/* Join event card */}
         <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
           <div className="flex items-center gap-2 mb-4">
             <QrCode className="w-5 h-5 text-gold" />
@@ -69,6 +68,7 @@ const Index = () => {
             />
             <Button
               onClick={handleJoinEvent}
+              disabled={joining}
               className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 px-6"
             >
               <ArrowRight className="w-5 h-5" />
@@ -76,7 +76,6 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Create event card */}
         <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
           <div className="flex items-center gap-2 mb-4">
             <PartyPopper className="w-5 h-5 text-gold" />
@@ -95,7 +94,6 @@ const Index = () => {
           </Button>
         </div>
 
-        {/* Features */}
         <div className="grid grid-cols-3 gap-4 pt-4">
           {[
             { icon: '📱', label: 'Fácil de usar' },

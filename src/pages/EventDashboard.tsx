@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { ArrowLeft, Copy, Download, Images, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { getEventById, EventData } from '@/lib/eventStore';
+import { getEventById, getEventPhotos, EventData, EventPhoto } from '@/lib/eventStore';
+import { supabase } from '@/integrations/supabase/client';
 import PhotoGallery from '@/components/PhotoGallery';
 import { toast } from 'sonner';
 
@@ -11,22 +12,38 @@ const EventDashboard = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [event, setEvent] = useState<EventData | null>(null);
+  const [photos, setPhotos] = useState<EventPhoto[]>([]);
   const [tab, setTab] = useState<'qr' | 'gallery'>('qr');
 
   useEffect(() => {
-    if (id) {
-      const e = getEventById(id);
-      if (e) setEvent(e);
-      else navigate('/');
-    }
+    if (!id) return;
+    getEventById(id).then(e => {
+      if (e) {
+        setEvent(e);
+        getEventPhotos(e.id).then(setPhotos);
+      } else {
+        navigate('/');
+      }
+    });
   }, [id, navigate]);
 
-  const refreshEvent = () => {
-    if (id) {
-      const e = getEventById(id);
-      if (e) setEvent(e);
-    }
-  };
+  // Realtime
+  useEffect(() => {
+    if (!event) return;
+    const channel = supabase
+      .channel(`dashboard-photos-${event.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'event_photos',
+        filter: `event_id=eq.${event.id}`,
+      }, (payload) => {
+        setPhotos(prev => [payload.new as EventPhoto, ...prev]);
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [event]);
 
   if (!event) return null;
 
@@ -45,7 +62,6 @@ const EventDashboard = () => {
   return (
     <div className="min-h-screen bg-gradient-hero">
       <div className="max-w-2xl mx-auto px-6 py-8">
-        {/* Header */}
         <button
           onClick={() => navigate('/')}
           className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -63,7 +79,6 @@ const EventDashboard = () => {
           )}
         </div>
 
-        {/* Tabs */}
         <div className="flex gap-2 mb-6">
           <button
             onClick={() => setTab('qr')}
@@ -77,7 +92,7 @@ const EventDashboard = () => {
             Código QR
           </button>
           <button
-            onClick={() => { setTab('gallery'); refreshEvent(); }}
+            onClick={() => setTab('gallery')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'gallery'
                 ? 'bg-gradient-gold text-primary-foreground shadow-gold'
@@ -85,60 +100,37 @@ const EventDashboard = () => {
             }`}
           >
             <Images className="w-4 h-4" />
-            Galería ({event.photos.length})
+            Galería ({photos.length})
           </button>
         </div>
 
-        {/* QR Tab */}
         {tab === 'qr' && (
           <div className="bg-card rounded-2xl p-8 shadow-lg border border-border text-center space-y-6">
             <p className="text-muted-foreground text-sm">
               Imprime este QR y colócalo en las mesas de tus invitados
             </p>
-
             <div className="inline-block p-6 bg-background rounded-2xl border border-border">
-              <QRCodeSVG
-                value={eventUrl}
-                size={200}
-                level="H"
-                fgColor="hsl(30, 10%, 15%)"
-                bgColor="transparent"
-              />
+              <QRCodeSVG value={eventUrl} size={200} level="H" fgColor="hsl(30, 10%, 15%)" bgColor="transparent" />
             </div>
-
             <div>
               <p className="text-xs text-muted-foreground mb-2">Código del evento</p>
               <div className="flex items-center justify-center gap-2">
-                <span className="font-mono text-2xl font-bold tracking-[0.3em] text-foreground">
-                  {event.code}
-                </span>
-                <button onClick={copyCode} className="text-gold hover:text-gold-dark">
-                  <Copy className="w-4 h-4" />
-                </button>
+                <span className="font-mono text-2xl font-bold tracking-[0.3em] text-foreground">{event.code}</span>
+                <button onClick={copyCode} className="text-gold hover:text-gold-dark"><Copy className="w-4 h-4" /></button>
               </div>
             </div>
-
             <div className="flex gap-2">
               <Button variant="outline" onClick={copyLink} className="flex-1 border-gold/30 hover:bg-cream">
-                <Copy className="w-4 h-4 mr-2" />
-                Copiar enlace
+                <Copy className="w-4 h-4 mr-2" />Copiar enlace
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => window.print()}
-                className="flex-1 border-gold/30 hover:bg-cream"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Imprimir QR
+              <Button variant="outline" onClick={() => window.print()} className="flex-1 border-gold/30 hover:bg-cream">
+                <Download className="w-4 h-4 mr-2" />Imprimir QR
               </Button>
             </div>
           </div>
         )}
 
-        {/* Gallery Tab */}
-        {tab === 'gallery' && (
-          <PhotoGallery photos={event.photos} />
-        )}
+        {tab === 'gallery' && <PhotoGallery photos={photos} />}
       </div>
     </div>
   );
