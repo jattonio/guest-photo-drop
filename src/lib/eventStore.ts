@@ -92,12 +92,10 @@ export async function uploadPhoto(eventId: string, file: File): Promise<string> 
     .upload(fileName, file, { contentType: file.type });
 
   if (error) throw error;
-  
-  const { data } = supabase.storage
-    .from('event-photos')
-    .getPublicUrl(fileName);
 
-  return data.publicUrl;
+  // Store the relative path (not the full URL) so we can request
+  // on-the-fly transformations later.
+  return fileName;
 }
 
 export interface PhotoReaction {
@@ -154,9 +152,29 @@ export function getGuestId(): string {
   return id;
 }
 
-export function getPhotoUrl(filePath: string): string {
-  // If it's already a full URL, return as-is
-  if (filePath.startsWith('http')) return filePath;
-  const { data } = supabase.storage.from('event-photos').getPublicUrl(filePath);
-  return data.publicUrl;
+export type PhotoSize = 'thumb' | 'large' | 'original';
+
+// Extracts the object path relative to the bucket from either a full
+// public URL (older records) or a path (new records).
+function toBucketPath(filePath: string): string {
+  const marker = '/object/public/event-photos/';
+  const idx = filePath.indexOf(marker);
+  if (idx >= 0) return filePath.slice(idx + marker.length);
+  return filePath;
+}
+
+export function getPhotoUrl(filePath: string, size: PhotoSize = 'original'): string {
+  const path = toBucketPath(filePath);
+  const bucket = supabase.storage.from('event-photos');
+
+  if (size === 'original') {
+    return bucket.getPublicUrl(path).data.publicUrl;
+  }
+
+  const transform =
+    size === 'thumb'
+      ? { width: 600, quality: 70 }
+      : { width: 1600, quality: 85 };
+
+  return bucket.getPublicUrl(path, { transform }).data.publicUrl;
 }

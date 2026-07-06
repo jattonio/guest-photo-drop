@@ -8,14 +8,17 @@ interface PhotoGalleryProps {
 }
 
 const REACTION_EMOJIS = ['❤️', '😍', '🔥', '😂', '👏'];
+const PAGE_SIZE = 30;
 
 const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [reactions, setReactions] = useState<Record<string, PhotoReaction[]>>({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const touchStartX = useRef<number | null>(null);
   const guestId = useRef(getGuestId());
 
   const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null;
+  const visiblePhotos = photos.slice(0, visibleCount);
 
   // Load reactions
   useEffect(() => {
@@ -103,7 +106,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   return (
     <>
       <div className="columns-2 sm:columns-3 gap-2 space-y-2">
-        {photos.map((photo, index) => {
+        {visiblePhotos.map((photo, index) => {
           const summary = getReactionSummary(photo.id);
           const totalReactions = Object.values(summary).reduce((a, b) => a + b, 0);
           return (
@@ -114,10 +117,11 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             >
               <div className="relative rounded-lg overflow-hidden">
                 <img
-                  src={getPhotoUrl(photo.file_path)}
+                  src={getPhotoUrl(photo.file_path, 'thumb')}
                   alt={`Foto de ${photo.guest_name}`}
                   className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
@@ -134,6 +138,17 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           );
         })}
       </div>
+
+      {visibleCount < photos.length && (
+        <div className="mt-6 flex justify-center">
+          <button
+            onClick={() => setVisibleCount(c => Math.min(c + PAGE_SIZE, photos.length))}
+            className="px-6 py-2.5 rounded-full bg-card border border-gold/30 text-sm font-medium text-foreground hover:bg-cream transition-all"
+          >
+            Cargar {Math.min(PAGE_SIZE, photos.length - visibleCount)} más ({visibleCount} de {photos.length})
+          </button>
+        </div>
+      )}
 
       {selectedPhoto && selectedIndex !== null && (
         <div
@@ -169,7 +184,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             <img
-              src={getPhotoUrl(selectedPhoto.file_path)}
+              src={getPhotoUrl(selectedPhoto.file_path, 'large')}
               alt=""
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
@@ -198,7 +213,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
               <a
-                href={getPhotoUrl(selectedPhoto.file_path)}
+                href={getPhotoUrl(selectedPhoto.file_path, 'original')}
                 download={`foto-${selectedPhoto.id}.jpg`}
                 target="_blank"
                 rel="noopener noreferrer"
