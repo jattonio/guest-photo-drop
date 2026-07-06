@@ -92,12 +92,10 @@ export async function uploadPhoto(eventId: string, file: File): Promise<string> 
     .upload(fileName, file, { contentType: file.type });
 
   if (error) throw error;
-  
-  const { data } = supabase.storage
-    .from('event-photos')
-    .getPublicUrl(fileName);
 
-  return data.publicUrl;
+  // Store the relative path (not the full URL) so we can request
+  // on-the-fly transformations later.
+  return fileName;
 }
 
 export interface PhotoReaction {
