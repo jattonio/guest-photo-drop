@@ -213,7 +213,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
               <a
-                href={getPhotoUrl(selectedPhoto.file_path)}
+                href={getPhotoUrl(selectedPhoto.file_path, 'original')}
                 download={`foto-${selectedPhoto.id}.jpg`}
                 target="_blank"
                 rel="noopener noreferrer"
