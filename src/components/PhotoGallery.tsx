@@ -184,7 +184,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             <img
-              src={getPhotoUrl(selectedPhoto.file_path)}
+              src={getPhotoUrl(selectedPhoto.file_path, 'large')}
               alt=""
               className="max-w-full max-h-[70vh] object-contain rounded-lg"
             />
