@@ -8,14 +8,17 @@ interface PhotoGalleryProps {
 }
 
 const REACTION_EMOJIS = ['❤️', '😍', '🔥', '😂', '👏'];
+const PAGE_SIZE = 30;
 
 const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [reactions, setReactions] = useState<Record<string, PhotoReaction[]>>({});
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const touchStartX = useRef<number | null>(null);
   const guestId = useRef(getGuestId());
 
   const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null;
+  const visiblePhotos = photos.slice(0, visibleCount);
 
   // Load reactions
   useEffect(() => {
