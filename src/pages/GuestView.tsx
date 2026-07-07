@@ -110,11 +110,13 @@ const GuestView = () => {
             <PhotoUploader eventId={event.id} onPhotosUploaded={refreshPhotos} />
           </div>
         )}
-
-        {tab === 'gallery' && (
-          <PhotoGallery photos={photos} />
-        )}
       </div>
+
+      {tab === 'gallery' && (
+        <div className="w-full">
+          <PhotoGallery photos={photos} />
+        </div>
+      )}
     </div>
   );
 };

@@ -1,35 +1,23 @@
-## Objetivo
+Plan para que la galería ocupe todo el ancho de la página
 
-Que los videos en la vista ampliada empiecen a reproducirse en cuanto haya suficiente buffer, sin esperar a la descarga completa.
+Objetivo: Eliminar el límite de ancho actual (`max-w-md` / `max-w-2xl`) que restringe la cuadrícula de fotos y videos, de modo que el área de despliegue de la galería use el 100% del ancho disponible en móvil, tablet y escritorio, sin afectar el header ni los botones de navegación.
 
-## Diagnóstico
+Cambios propuestos:
 
-En `src/components/PhotoGallery.tsx` el `<video>` del modal usa `src={getPhotoUrl(..., 'original')}`, que devuelve la URL pública de Storage (`/object/public/...`). Ese endpoint sirve el archivo entero sin siempre respetar `Range` requests de forma óptima cuando el `moov atom` del MP4 está al final del archivo, así que Safari/iOS espera a tener todo antes de empezar.
+1. **`src/pages/GuestView.tsx`**
+   - Mantener el header (botón de Inicio, título del evento, organizador) y los botones de tab centrados dentro de un contenedor estrecho.
+   - Extraer la sección de galería a un contenedor full-width debajo de los tabs: quitar el padding lateral que acota la cuadrícula y dejar que `<PhotoGallery />` ocupe todo el ancho de la pantalla.
+   - Asegurar que la pestaña de subida (`upload`) siga con el estilo actual de tarjeta centrada.
 
-## Cambios propuestos
+2. **`src/pages/EventDashboard.tsx`**
+   - Aplicar la misma lógica: header y tabs quedan en el contenedor centrado, y la galería se despliega en un bloque de ancho completo. La pestaña de QR permanece inalterada.
 
-**`src/components/PhotoGallery.tsx`** (solo el `<video>` del modal):
-- Añadir `preload="auto"` para que el navegador empiece a descargar buffer apenas se abre el modal.
-- Añadir `poster={getVideoThumbnailUrl(selectedPhoto.file_path)}` para mostrar el thumbnail generado mientras carga, en vez de un cuadro negro.
-- Mantener `controls`, `autoPlay`, `playsInline`.
-- Envolver el `<video>` en un contenedor `relative` con un spinner sutil (`animate-spin` con clase `border-gold`) posicionado en el centro que se oculta cuando dispara `onCanPlay`. Estado local `videoReady` en un nuevo pequeño componente `LightboxVideo` (definido dentro del mismo archivo) para no ensuciar `PhotoGallery`.
+3. **`src/components/PhotoGallery.tsx`**
+   - Ajustar la cuadrícula masonry (`columns-*`) para que use el ancho completo sin márgenes laterales artificiales.
+   - Añadir pequeños paddings horizontales móviles (p. ej. `px-2`) para que las fotos no toquen los bordes de la pantalla, aumentando ligeramente en pantallas grandes (`px-4`/`px-6`).
 
-**`src/lib/eventStore.ts`**:
-- Nueva utilidad `getVideoStreamUrl(filePath)` que devuelve la URL pública igual que `getPhotoUrl(..., 'original')` (Storage ya soporta `Range` en `/object/public/...`; no cambia la URL, solo separa la semántica). No se toca `getPhotoUrl`.
+4. Verificación visual:
+   - Comprobar en el preview que la cuadrícula se extiende de borde a borde en la vista actual (desktop 1050 px).
+   - Comprobar con la herramienta de vista de dispositivos (`mobile`/`tablet`) que el ancho es total sin romper la estructura de columnas.
 
-## Notas técnicas
-
-- No se re-codifica ni re-sube nada. Los videos ya subidos siguen sirviendo desde el mismo endpoint.
-- Para videos grabados en móviles el `moov atom` normalmente ya está al inicio (o el navegador hace un segundo Range request), así que con `preload="auto"` + `Range` la reproducción arranca en cuanto haya unos segundos de buffer.
-- Si el MP4 tiene el `moov` al final, el navegador seguirá teniendo que descargar más antes de empezar; una solución completa requeriría `faststart` en servidor (fuera de alcance de este cambio de UI).
-
-## Fuera de alcance
-
-- Transcodificación server-side / `qt-faststart`.
-- Cambios en el uploader, thumbnails, reacciones o galería tipo masonry.
-
-## Pruebas
-
-1. Abrir un video largo en la galería → aparece poster con thumbnail + spinner, y empieza a reproducirse antes de completar la descarga (verificable en DevTools Network: la request está `pending` mientras el video ya suena).
-2. Abrir una foto → sin cambios visuales.
-3. Swipe entre video y foto → sigue funcionando.
+Nota: No se modifica el lightbox, el uploader, ni la lógica de reacciones. Solo se cambia la disposición de la galería en la página.

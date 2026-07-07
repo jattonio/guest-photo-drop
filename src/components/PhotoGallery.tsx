@@ -195,44 +195,46 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
   return (
     <>
-      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2">
-        {visiblePhotos.map((photo, index) => {
-          const summary = getReactionSummary(photo.id);
-          const totalReactions = Object.values(summary).reduce((a, b) => a + b, 0);
-          return (
-            <div
-              key={photo.id}
-              className="break-inside-avoid cursor-pointer group"
-              onClick={() => setSelectedIndex(index)}
-            >
-              <div className="relative rounded-lg overflow-hidden">
-                {renderTile(photo)}
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
-                </div>
-                {totalReactions > 0 && (
-                  <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-foreground/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
-                    {Object.entries(summary).slice(0, 3).map(([emoji, count]) => (
-                      <span key={emoji} className="text-xs">{emoji}{count > 1 ? <span className="text-background text-[10px]">{count}</span> : null}</span>
-                    ))}
+      <div className="w-full px-2 sm:px-4 lg:px-6">
+        <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2 w-full">
+          {visiblePhotos.map((photo, index) => {
+            const summary = getReactionSummary(photo.id);
+            const totalReactions = Object.values(summary).reduce((a, b) => a + b, 0);
+            return (
+              <div
+                key={photo.id}
+                className="break-inside-avoid cursor-pointer group"
+                onClick={() => setSelectedIndex(index)}
+              >
+                <div className="relative rounded-lg overflow-hidden">
+                  {renderTile(photo)}
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
                   </div>
-                )}
+                  {totalReactions > 0 && (
+                    <div className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-foreground/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+                      {Object.entries(summary).slice(0, 3).map(([emoji, count]) => (
+                        <span key={emoji} className="text-xs">{emoji}{count > 1 ? <span className="text-background text-[10px]">{count}</span> : null}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {visibleCount < photos.length && (
-        <div className="mt-6 flex justify-center">
-          <button
-            onClick={() => setVisibleCount(c => Math.min(c + PAGE_SIZE, photos.length))}
-            className="px-6 py-2.5 rounded-full bg-card border border-gold/30 text-sm font-medium text-foreground hover:bg-cream transition-all"
-          >
-            Cargar {Math.min(PAGE_SIZE, photos.length - visibleCount)} más ({visibleCount} de {photos.length})
-          </button>
+            );
+          })}
         </div>
-      )}
+
+        {visibleCount < photos.length && (
+          <div className="mt-6 flex justify-center">
+            <button
+              onClick={() => setVisibleCount(c => Math.min(c + PAGE_SIZE, photos.length))}
+              className="px-6 py-2.5 rounded-full bg-card border border-gold/30 text-sm font-medium text-foreground hover:bg-cream transition-all"
+            >
+              Cargar {Math.min(PAGE_SIZE, photos.length - visibleCount)} más ({visibleCount} de {photos.length})
+            </button>
+          </div>
+        )}
+      </div>
 
       {selectedPhoto && selectedIndex !== null && (
         <div
