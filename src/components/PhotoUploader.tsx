@@ -170,7 +170,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
           <Button
             onClick={handleUpload}
             disabled={uploading || uploaded}
-            className="w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
+            className="relative overflow-hidden w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
           >
             {uploaded ? (
               <>
@@ -178,7 +178,15 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
                 ¡Listo!
               </>
             ) : uploading ? (
-              <span className="animate-pulse">Subiendo...</span>
+              <>
+                <span>
+                  Subiendo {currentIndex}/{previews.length} · {currentPercent}%
+                </span>
+                <span
+                  className="absolute left-0 bottom-0 h-1 bg-primary-foreground/80 transition-all duration-200"
+                  style={{ width: `${currentPercent}%` }}
+                />
+              </>
             ) : (
               <>
                 <Upload className="w-5 h-5 mr-2" />
