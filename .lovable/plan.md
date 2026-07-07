@@ -1,33 +1,33 @@
+# Galería estilo Pinterest
 
-# Optimización de galería (sin tocar calidad de las fotos)
+## Cambios en `src/components/PhotoGallery.tsx`
 
-## Ajuste al plan
-Se elimina el punto 1 (compresión en el cliente). Las fotos se suben **tal cual, sin recompresión ni cambio de resolución**. La optimización viene 100% del lado de **entrega** (miniaturas on-the-fly) y de **cuánto** se pinta a la vez.
+### 1. Distribución masonry responsive
+Reemplazar el contenedor del grid:
 
-## Cambios
+```
+columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2
+```
 
-### 1. Miniaturas vía Supabase Storage transformations
-En `src/lib/eventStore.ts`, `getPhotoUrl(filePath, size?)` acepta:
-- `'thumb'` → `width: 600, quality: 70` → para el grid masonry
-- `'large'` → `width: 1600, quality: 85` → para el modal ampliado
-- `'original'` → URL sin transformar → solo para el botón "Descargar"
+Resultado:
+- Mobile (<640px): **2 columnas**
+- Tablet sm (≥640px): **3 columnas**
+- Tablet md (≥768px): **4 columnas**
+- Desktop lg (≥1024px): **5 columnas**
 
-Se agrega helper que extrae el path relativo del bucket cuando `file_path` viene como URL pública completa (caso de las fotos ya subidas), para poder pedir la transformación. Si es un path relativo (subidas futuras), se usa directo.
+Se mantiene `break-inside-avoid` en cada tarjeta y `loading="lazy"` + `decoding="async"` para el rendimiento del scroll infinito paginado (30 en 30, ya existente).
 
-`uploadPhoto` guardará el `path` relativo en lugar de la URL pública. Retrocompatible: `getPhotoUrl` maneja ambos formatos.
+### 2. Preview (modal) a 1600px conservando proporción
+El modal ya usa `getPhotoUrl(selectedPhoto.file_path, 'large')`, que en `src/lib/eventStore.ts` pide la transformación `{ width: 1600, quality: 85 }` a Supabase Storage. Storage escala manteniendo la proporción original (solo se fija el ancho), así que alto y ancho quedan proporcionales a la foto original. No requiere cambios.
 
-### 2. Paginación incremental en la galería
-En `src/components/PhotoGallery.tsx`:
-- `visibleCount` inicial **30**, botón "Cargar 30 más" al final del grid.
-- El modal (lightbox) sigue navegando entre las 200 fotos completas; solo el grid se pagina.
-- Se añade `decoding="async"` al `<img>` de las miniaturas.
-- Grid usa `getPhotoUrl(photo.file_path, 'thumb')`.
-- Modal usa `getPhotoUrl(selectedPhoto.file_path, 'large')`.
-- Enlace de descarga usa `getPhotoUrl(..., 'original')` — descarga el archivo original sin pérdida.
+Se ajusta el `<img>` del modal para que respete la proporción sin recortar y sin forzar altura excesiva:
+- Se mantiene `object-contain`.
+- `max-h-[70vh]` se sustituye por `max-h-[85vh]` para aprovechar mejor la pantalla en desktop (opcional, dentro del alcance visual de "preview").
+
+### 3. Descarga = original
+El enlace de descarga ya usa `getPhotoUrl(..., 'original')`, que retorna la URL pública sin transformación → descarga el archivo tal cual se subió. No requiere cambios.
 
 ## Fuera de alcance
-- No se recomprime nada del lado cliente ni servidor.
-- Las 200 fotos ya subidas se benefician automáticamente porque las transformaciones se hacen sobre el archivo del bucket al momento de servir.
-- Sin cambios visuales ni de flujo de subida.
-
-Procedo.
+- No se toca el uploader, ni la lógica de reacciones, ni el store.
+- No se recomprime nada en cliente ni servidor.
+- No se cambia la paleta ni tipografía.

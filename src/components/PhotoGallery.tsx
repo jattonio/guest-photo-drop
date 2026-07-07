@@ -105,7 +105,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
   return (
     <>
-      <div className="columns-2 sm:columns-3 gap-2 space-y-2">
+      <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2">
         {visiblePhotos.map((photo, index) => {
           const summary = getReactionSummary(photo.id);
           const totalReactions = Object.values(summary).reduce((a, b) => a + b, 0);
@@ -186,7 +186,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             <img
               src={getPhotoUrl(selectedPhoto.file_path, 'large')}
               alt=""
-              className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
             />
             {/* Reactions bar */}
             <div className="mt-3 flex justify-center gap-1">
