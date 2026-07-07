@@ -93,23 +93,20 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
     touchStartX.current = null;
   };
 
-  const renderTile = (photo: EventPhoto) => {
-    const isVideo = photo.media_type === 'video';
+  const VideoTile = ({ photo }: { photo: EventPhoto }) => {
+    const [thumbError, setThumbError] = useState(false);
     const width = photo.width ?? undefined;
     const height = photo.height ?? undefined;
 
-    if (isVideo) {
+    if (thumbError) {
       return (
         <>
-          <img
-            src={getVideoThumbnailUrl(photo.file_path)}
-            alt={`Video de ${photo.guest_name}`}
-            width={width}
-            height={height}
-            className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
-            loading="lazy"
-            decoding="async"
-          />
+          <div
+            className="w-full bg-foreground/10 flex items-center justify-center"
+            style={{ aspectRatio: width && height ? `${width}/${height}` : '3/4' }}
+          >
+            <Play className="w-10 h-10 text-foreground/50" />
+          </div>
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-10 h-10 rounded-full bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
               <Play className="w-5 h-5 text-background fill-background" />
@@ -117,6 +114,36 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           </div>
         </>
       );
+    }
+
+    return (
+      <>
+        <img
+          src={getVideoThumbnailUrl(photo.file_path)}
+          alt={`Video de ${photo.guest_name}`}
+          width={width}
+          height={height}
+          className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          decoding="async"
+          onError={() => setThumbError(true)}
+        />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
+            <Play className="w-5 h-5 text-background fill-background" />
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderTile = (photo: EventPhoto) => {
+    const isVideo = photo.media_type === 'video';
+    const width = photo.width ?? undefined;
+    const height = photo.height ?? undefined;
+
+    if (isVideo) {
+      return <VideoTile photo={photo} />;
     }
 
     return (
