@@ -119,7 +119,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
                 <img
                   src={getPhotoUrl(photo.file_path, 'thumb')}
                   alt={`Foto de ${photo.guest_name}`}
-                  className="w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   decoding="async"
                 />

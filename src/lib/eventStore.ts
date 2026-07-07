@@ -173,8 +173,8 @@ export function getPhotoUrl(filePath: string, size: PhotoSize = 'original'): str
 
   const transform =
     size === 'thumb'
-      ? { width: 600, quality: 70 }
-      : { width: 1600, quality: 85 };
+      ? { width: 600, quality: 70, resize: 'contain' as const }
+      : { width: 1600, quality: 85, resize: 'contain' as const };
 
   return bucket.getPublicUrl(path, { transform }).data.publicUrl;
 }
