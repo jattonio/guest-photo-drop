@@ -205,19 +205,33 @@ export async function generateVideoThumbnail(file: File): Promise<Blob> {
 
 export async function uploadMedia(eventId: string, file: File): Promise<UploadMediaResult> {
   const mediaType = getMediaTypeFromFile(file);
-  const dimensions = await getMediaDimensions(file);
+  let width: number | null = null;
+  let height: number | null = null;
+
+  try {
+    const dimensions = await getMediaDimensions(file);
+    width = dimensions.width;
+    height = dimensions.height;
+  } catch (err) {
+    console.warn('No se pudieron leer las dimensiones del archivo:', err);
+  }
+
   const filePath = await uploadFile(eventId, file);
 
   if (mediaType === 'video') {
-    const thumbBlob = await generateVideoThumbnail(file);
-    const thumbPath = getVideoThumbnailPath(filePath);
-    const { error } = await supabase.storage
-      .from('event-photos')
-      .upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
-    if (error) throw error;
+    try {
+      const thumbBlob = await generateVideoThumbnail(file);
+      const thumbPath = getVideoThumbnailPath(filePath);
+      const { error } = await supabase.storage
+        .from('event-photos')
+        .upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
+      if (error) throw error;
+    } catch (err) {
+      console.warn('No se pudo generar el thumbnail del video:', err);
+    }
   }
 
-  return { filePath, mediaType, width: dimensions.width, height: dimensions.height };
+  return { filePath, mediaType, width, height };
 }
 
 // Backwards-compatible alias for existing call sites.
