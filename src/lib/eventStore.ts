@@ -79,7 +79,7 @@ export async function getEventPhotos(eventId: string): Promise<EventPhoto[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  return (data || []).map(p => ({ ...p, media_type: p.media_type as 'image' | 'video' }));
 }
 
 export async function addPhotoRecord(
