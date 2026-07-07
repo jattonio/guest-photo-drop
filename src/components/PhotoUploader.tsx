@@ -21,6 +21,8 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPercent, setCurrentPercent] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,6 +34,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       newPreviews.push({ file, previewUrl: URL.createObjectURL(file), mediaType: getMediaTypeFromFile(file) });
     });
     setPreviews(prev => [...prev, ...newPreviews]);
+    setUploaded(false);
   }, []);
 
   const removePreview = (index: number) => {
