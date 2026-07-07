@@ -90,7 +90,7 @@ const GuestView = () => {
             }`}
           >
             <Camera className="w-4 h-4" />
-            Subir fotos
+            Subir fotos o videos
           </button>
           <button
             onClick={() => setTab('gallery')}
