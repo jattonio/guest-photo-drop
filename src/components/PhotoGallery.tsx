@@ -93,6 +93,30 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
     touchStartX.current = null;
   };
 
+  const LightboxVideo = ({ photo }: { photo: EventPhoto }) => {
+    const [ready, setReady] = useState(false);
+    return (
+      <div className="relative">
+        <video
+          src={getPhotoUrl(photo.file_path, 'original')}
+          poster={getVideoThumbnailUrl(photo.file_path)}
+          controls
+          autoPlay
+          playsInline
+          preload="auto"
+          onCanPlay={() => setReady(true)}
+          onLoadedData={() => setReady(true)}
+          className="max-w-full max-h-[85vh] object-contain rounded-lg"
+        />
+        {!ready && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-10 h-10 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const VideoTile = ({ photo }: { photo: EventPhoto }) => {
     const [thumbError, setThumbError] = useState(false);
     const width = photo.width ?? undefined;
@@ -244,13 +268,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             {selectedPhoto.media_type === 'video' ? (
-              <video
-                src={getPhotoUrl(selectedPhoto.file_path, 'original')}
-                controls
-                autoPlay
-                playsInline
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
-              />
+              <LightboxVideo photo={selectedPhoto} />
             ) : (
               <img
                 src={getPhotoUrl(selectedPhoto.file_path, 'large')}

@@ -1,35 +1,35 @@
 ## Objetivo
 
-Durante la subida de fotos/videos, mostrar al invitado un progreso real (archivo actual de total y % del archivo en curso) y asegurar que el botón vuelva a su estado inicial al finalizar, en lugar de quedarse en "Subiendo..." o "¡Listo!" indefinidamente.
+Que los videos en la vista ampliada empiecen a reproducirse en cuanto haya suficiente buffer, sin esperar a la descarga completa.
 
-## Cambios
+## Diagnóstico
 
-### 1. `src/lib/eventStore.ts`
-- Extender `uploadFile` y `uploadMedia` para aceptar un callback opcional `onProgress(percent: number)`.
-- Como el SDK de Storage no expone progreso nativo, reemplazar la llamada `supabase.storage.from(...).upload(...)` por un `XMLHttpRequest` PUT/POST directo al endpoint de Storage (`/storage/v1/object/event-photos/<path>`) usando la `session` actual (o la anon key para invitados anónimos) y escuchando `xhr.upload.onprogress` para emitir el porcentaje. Mantener el mismo `contentType`, ruta y respuesta (`filePath`) para no romper el resto del flujo.
-- El thumbnail de video se sigue subiendo con el SDK (archivo pequeño, sin progreso).
+En `src/components/PhotoGallery.tsx` el `<video>` del modal usa `src={getPhotoUrl(..., 'original')}`, que devuelve la URL pública de Storage (`/object/public/...`). Ese endpoint sirve el archivo entero sin siempre respetar `Range` requests de forma óptima cuando el `moov atom` del MP4 está al final del archivo, así que Safari/iOS espera a tener todo antes de empezar.
 
-### 2. `src/components/PhotoUploader.tsx`
-- Añadir estado local: `currentIndex` (archivo en curso, 1-based) y `currentPercent` (0–100).
-- En el loop de `handleUpload`, pasar un callback `onProgress` a `uploadMedia` que actualice `currentPercent`, e incrementar `currentIndex` antes de cada archivo.
-- Cambiar el contenido del botón cuando `uploading` es true:
-  - Barra de progreso delgada dentro del botón (usando un `div` con `width: ${currentPercent}%` sobre el fondo dorado).
-  - Texto: `Subiendo {currentIndex}/{total} · {currentPercent}%`.
-- Restablecimiento del botón:
-  - Al finalizar con éxito: mostrar el check "¡Listo!" 1.2s y luego limpiar previews + resetear `uploaded`, `currentIndex`, `currentPercent` (ya existe el `setTimeout`, se acorta y se añaden los nuevos resets).
-  - En el `catch`: además de mostrar el toast de error, resetear inmediatamente `currentIndex` y `currentPercent` para que el botón vuelva al estado "Subir archivos" (el `finally` ya hace `setUploading(false)`).
-  - Asegurar que `uploaded` también se resetee si el usuario vuelve a seleccionar archivos después de un éxito, para evitar quedar bloqueado en el estado "Listo".
+## Cambios propuestos
 
-### 3. Detalles visuales
-- Barra de progreso: fondo `bg-primary-foreground/20`, relleno `bg-primary-foreground` con `transition-all duration-200`, alto ~4px, posicionada en la parte inferior del botón (usando `relative` + `absolute inset-x-0 bottom-0`).
-- Mantener el botón deshabilitado durante `uploading` y `uploaded` (como hoy).
-- No cambiar estilos globales ni tokens.
+**`src/components/PhotoGallery.tsx`** (solo el `<video>` del modal):
+- Añadir `preload="auto"` para que el navegador empiece a descargar buffer apenas se abre el modal.
+- Añadir `poster={getVideoThumbnailUrl(selectedPhoto.file_path)}` para mostrar el thumbnail generado mientras carga, en vez de un cuadro negro.
+- Mantener `controls`, `autoPlay`, `playsInline`.
+- Envolver el `<video>` en un contenedor `relative` con un spinner sutil (`animate-spin` con clase `border-gold`) posicionado en el centro que se oculta cuando dispara `onCanPlay`. Estado local `videoReady` en un nuevo pequeño componente `LightboxVideo` (definido dentro del mismo archivo) para no ensuciar `PhotoGallery`.
+
+**`src/lib/eventStore.ts`**:
+- Nueva utilidad `getVideoStreamUrl(filePath)` que devuelve la URL pública igual que `getPhotoUrl(..., 'original')` (Storage ya soporta `Range` en `/object/public/...`; no cambia la URL, solo separa la semántica). No se toca `getPhotoUrl`.
+
+## Notas técnicas
+
+- No se re-codifica ni re-sube nada. Los videos ya subidos siguen sirviendo desde el mismo endpoint.
+- Para videos grabados en móviles el `moov atom` normalmente ya está al inicio (o el navegador hace un segundo Range request), así que con `preload="auto"` + `Range` la reproducción arranca en cuanto haya unos segundos de buffer.
+- Si el MP4 tiene el `moov` al final, el navegador seguirá teniendo que descargar más antes de empezar; una solución completa requeriría `faststart` en servidor (fuera de alcance de este cambio de UI).
 
 ## Fuera de alcance
-- No se toca el subidor del dashboard del organizador (si existiera flujo distinto), ni la lógica de reacciones, thumbnails o galería.
-- No se agregan reintentos ni cancelación de subida — solo feedback visual y reset correcto.
 
-## Verificación
-- Subir 1 foto: barra va de 0→100%, botón muestra "¡Listo!" y vuelve a estado inicial tras ~1.2s.
-- Subir 3 archivos mezclados (fotos + video): contador avanza 1/3 → 2/3 → 3/3, cada uno con su % propio.
-- Forzar error (cortar red a mitad): botón vuelve a "Subir archivos", toast de error, se puede reintentar.
+- Transcodificación server-side / `qt-faststart`.
+- Cambios en el uploader, thumbnails, reacciones o galería tipo masonry.
+
+## Pruebas
+
+1. Abrir un video largo en la galería → aparece poster con thumbnail + spinner, y empieza a reproducirse antes de completar la descarga (verificable en DevTools Network: la request está `pending` mientras el video ya suena).
+2. Abrir una foto → sin cambios visuales.
+3. Swipe entre video y foto → sigue funcionando.
