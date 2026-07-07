@@ -1,23 +1,19 @@
-Plan para que la galería ocupe todo el ancho de la página
+## Recordar y animar al invitado a poner su nombre
 
-Objetivo: Eliminar el límite de ancho actual (`max-w-md` / `max-w-2xl`) que restringe la cuadrícula de fotos y videos, de modo que el área de despliegue de la galería use el 100% del ancho disponible en móvil, tablet y escritorio, sin afectar el header ni los botones de navegación.
+### Cambios en `src/components/PhotoUploader.tsx`
 
-Cambios propuestos:
+1. **Persistir el nombre**
+   - Inicializar el estado `guestName` leyendo `localStorage.getItem('guest_name')`.
+   - Actualizar `localStorage` con cada cambio del input (`onChange`) para persistir aunque no se complete la subida.
+   - Al terminar la subida exitosa, guardar el nombre actual (si tiene texto) en `localStorage`.
 
-1. **`src/pages/GuestView.tsx`**
-   - Mantener el header (botón de Inicio, título del evento, organizador) y los botones de tab centrados dentro de un contenedor estrecho.
-   - Extraer la sección de galería a un contenedor full-width debajo de los tabs: quitar el padding lateral que acota la cuadrícula y dejar que `<PhotoGallery />` ocupe todo el ancho de la pantalla.
-   - Asegurar que la pestaña de subida (`upload`) siga con el estilo actual de tarjeta centrada.
+2. **Alerta amigable cuando no hay nombre**
+   - Antes de comenzar `handleUpload`, si `guestName.trim()` está vacío, mostrar un toast de sonner con el mensaje:
+     > "Escribe tu nombre que la(el) invitada(o) te agradezca"
+   - El toast será de tipo informativo (puede usarse `toast()` o `toast.info()` si está disponible). No se detiene el flujo ni se bloquea el botón: se muestra la alerta y se continúa con la subida como invitado anónimo.
 
-2. **`src/pages/EventDashboard.tsx`**
-   - Aplicar la misma lógica: header y tabs quedan en el contenedor centrado, y la galería se despliega en un bloque de ancho completo. La pestaña de QR permanece inalterada.
+### Fuera de alcance
 
-3. **`src/components/PhotoGallery.tsx`**
-   - Ajustar la cuadrícula masonry (`columns-*`) para que use el ancho completo sin márgenes laterales artificiales.
-   - Añadir pequeños paddings horizontales móviles (p. ej. `px-2`) para que las fotos no toquen los bordes de la pantalla, aumentando ligeramente en pantallas grandes (`px-4`/`px-6`).
-
-4. Verificación visual:
-   - Comprobar en el preview que la cuadrícula se extiende de borde a borde en la vista actual (desktop 1050 px).
-   - Comprobar con la herramienta de vista de dispositivos (`mobile`/`tablet`) que el ancho es total sin romper la estructura de columnas.
-
-Nota: No se modifica el lightbox, el uploader, ni la lógica de reacciones. Solo se cambia la disposición de la galería en la página.
+- No se hace obligatorio el nombre.
+- No se sincroniza entre dispositivos ni se asocia a una cuenta.
+- No se cambia el fallback "Invitado anónimo" que ya existe en `handleUpload`.
