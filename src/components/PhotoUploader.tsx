@@ -17,7 +17,7 @@ interface FilePreview {
 }
 
 const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
-  const [guestName, setGuestName] = useState('');
+  const [guestName, setGuestName] = useState(() => localStorage.getItem('guest_name') || '');
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
