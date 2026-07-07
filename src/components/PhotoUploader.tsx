@@ -17,7 +17,7 @@ interface FilePreview {
 }
 
 const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
-  const [guestName, setGuestName] = useState('');
+  const [guestName, setGuestName] = useState(() => localStorage.getItem('guest_name') || '');
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
@@ -54,7 +54,15 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
     setUploading(true);
     setCurrentIndex(0);
     setCurrentPercent(0);
+
+    if (!guestName.trim()) {
+      toast('Escribe tu nombre que la(el) invitada(o) te agradezca');
+    }
+
     const name = guestName.trim() || 'Invitado anónimo';
+    if (name !== 'Invitado anónimo') {
+      localStorage.setItem('guest_name', name);
+    }
     const total = previews.length;
 
     try {
@@ -99,7 +107,16 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
         </label>
         <Input
           value={guestName}
-          onChange={(e) => setGuestName(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setGuestName(value);
+            const trimmed = value.trim();
+            if (trimmed) {
+              localStorage.setItem('guest_name', trimmed);
+            } else {
+              localStorage.removeItem('guest_name');
+            }
+          }}
           placeholder="¿Cómo te llamas?"
           className="bg-card border-border"
         />
