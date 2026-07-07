@@ -244,13 +244,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
 
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
             {selectedPhoto.media_type === 'video' ? (
-              <video
-                src={getPhotoUrl(selectedPhoto.file_path, 'original')}
-                controls
-                autoPlay
-                playsInline
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
-              />
+              <LightboxVideo photo={selectedPhoto} />
             ) : (
               <img
                 src={getPhotoUrl(selectedPhoto.file_path, 'large')}
