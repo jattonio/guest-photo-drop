@@ -54,8 +54,15 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
     setUploading(true);
     setCurrentIndex(0);
     setCurrentPercent(0);
-    const name = guestName.trim() || 'Invitado anónimo';
-    const total = previews.length;
+      if (!guestName.trim()) {
+        toast('Escribe tu nombre que la(el) invitada(o) te agradezca');
+      }
+
+      const name = guestName.trim() || 'Invitado anónimo';
+      if (name !== 'Invitado anónimo') {
+        localStorage.setItem('guest_name', name);
+      }
+      const total = previews.length;
 
     try {
       for (let i = 0; i < previews.length; i++) {
