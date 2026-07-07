@@ -24,8 +24,8 @@ export interface EventData {
 export interface UploadMediaResult {
   filePath: string;
   mediaType: 'image' | 'video';
-  width: number;
-  height: number;
+  width: number | null;
+  height: number | null;
 }
 
 export function generateCode(): string {
