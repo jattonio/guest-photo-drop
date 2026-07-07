@@ -1,79 +1,35 @@
 ## Objetivo
-Extender el flujo actual de fotos para que los invitados puedan subir videos desde el mismo selector, visualizarlos en la galería masonry estilo Pinterest sin deformar el layout, reproducirlos en el preview ampliado y descargar el archivo original.
 
-## Alcance
-- Mismo botón de subida para fotos y videos (`image/*,video/*`).
-- Thumbnail estático con ícono de play en el masonry.
-- Reproductor de video nativo en el preview ampliado.
-- Descarga del archivo original tal cual se subió.
-- Las reacciones por emoji seguirán funcionando sobre videos igual que sobre fotos.
-- Sin límite de duración ni tamaño (tal como indicaste).
+Durante la subida de fotos/videos, mostrar al invitado un progreso real (archivo actual de total y % del archivo en curso) y asegurar que el botón vuelva a su estado inicial al finalizar, en lugar de quedarse en "Subiendo..." o "¡Listo!" indefinidamente.
 
-## Cambios en base de datos (migración)
-1. Agregar a `event_photos`:
-   - `media_type text not null default 'image'` — valores `'image'` o `'video'`.
-   - `width integer` y `height integer` — dimensiones reales del archivo (foto o video). Sirven para reservar el espacio correcto en el masonry y evitar layout shift.
-2. Mantener `file_path` como referencia al archivo principal (video o imagen).
-3. No se modifican las políticas RLS existentes; la tabla sigue pública para subidas y lecturas.
+## Cambios
 
-## Cambios en almacenamiento
-- Reutilizar el bucket público `event-photos` para videos.
-- Para cada video, generar en el cliente un thumbnail JPEG del primer frame y subirlo al mismo bucket con un sufijo identificable (por ejemplo `eventId/uuid-thumb.jpg`), junto al video original (`eventId/uuid.mp4`).
+### 1. `src/lib/eventStore.ts`
+- Extender `uploadFile` y `uploadMedia` para aceptar un callback opcional `onProgress(percent: number)`.
+- Como el SDK de Storage no expone progreso nativo, reemplazar la llamada `supabase.storage.from(...).upload(...)` por un `XMLHttpRequest` PUT/POST directo al endpoint de Storage (`/storage/v1/object/event-photos/<path>`) usando la `session` actual (o la anon key para invitados anónimos) y escuchando `xhr.upload.onprogress` para emitir el porcentaje. Mantener el mismo `contentType`, ruta y respuesta (`filePath`) para no romper el resto del flujo.
+- El thumbnail de video se sigue subiendo con el SDK (archivo pequeño, sin progreso).
 
-## Cambios en frontend
+### 2. `src/components/PhotoUploader.tsx`
+- Añadir estado local: `currentIndex` (archivo en curso, 1-based) y `currentPercent` (0–100).
+- En el loop de `handleUpload`, pasar un callback `onProgress` a `uploadMedia` que actualice `currentPercent`, e incrementar `currentIndex` antes de cada archivo.
+- Cambiar el contenido del botón cuando `uploading` es true:
+  - Barra de progreso delgada dentro del botón (usando un `div` con `width: ${currentPercent}%` sobre el fondo dorado).
+  - Texto: `Subiendo {currentIndex}/{total} · {currentPercent}%`.
+- Restablecimiento del botón:
+  - Al finalizar con éxito: mostrar el check "¡Listo!" 1.2s y luego limpiar previews + resetear `uploaded`, `currentIndex`, `currentPercent` (ya existe el `setTimeout`, se acorta y se añaden los nuevos resets).
+  - En el `catch`: además de mostrar el toast de error, resetear inmediatamente `currentIndex` y `currentPercent` para que el botón vuelva al estado "Subir archivos" (el `finally` ya hace `setUploading(false)`).
+  - Asegurar que `uploaded` también se resetee si el usuario vuelve a seleccionar archivos después de un éxito, para evitar quedar bloqueado en el estado "Listo".
 
-### `src/lib/eventStore.ts`
-- Extender `EventPhoto` con `media_type`, `width`, `height`.
-- Agregar `uploadMedia(eventId, file, guestName)` que:
-  - Detecte si el archivo es imagen o video.
-  - Para videos: extraiga `width`/`height` y genere un thumbnail del primer frame.
-  - Suba el archivo principal y, en caso de video, el thumbnail.
-  - Guarde el registro en `event_photos` con `media_type` y dimensiones.
-- Agregar helpers:
-  - `getMediaUrl(filePath, 'original')` para descarga.
-  - `getMediaUrl(filePath, 'thumb')` / `'large'` para imágenes (funcionan igual que hoy).
-  - `getVideoThumbnailUrl(videoPath)` para obtener el thumbnail del primer frame.
+### 3. Detalles visuales
+- Barra de progreso: fondo `bg-primary-foreground/20`, relleno `bg-primary-foreground` con `transition-all duration-200`, alto ~4px, posicionada en la parte inferior del botón (usando `relative` + `absolute inset-x-0 bottom-0`).
+- Mantener el botón deshabilitado durante `uploading` y `uploaded` (como hoy).
+- No cambiar estilos globales ni tokens.
 
-### `src/components/PhotoUploader.tsx`
-- Cambiar los inputs de `accept="image/*"` a `accept="image/*,video/*"`.
-- En el preview previo a subir, mostrar:
-  - `<img>` para fotos.
-  - `<video>` con poster/controls desactivados para videos.
-- Actualizar textos para reflejar "fotos y videos".
+## Fuera de alcance
+- No se toca el subidor del dashboard del organizador (si existiera flujo distinto), ni la lógica de reacciones, thumbnails o galería.
+- No se agregan reintentos ni cancelación de subida — solo feedback visual y reset correcto.
 
-### `src/components/PhotoGallery.tsx`
-- Leer `media_type` y dimensiones de cada registro.
-- En el tile masonry:
-  - Si es imagen: renderizar `<img>` como hoy.
-  - Si es video: renderizar `<img src={thumbnail}>` con un overlay de ícono de play.
-  - Usar `aspect-ratio` o un `padding-bottom` derivado de `width/height` para mantener el espacio reservado mientras carga el thumbnail.
-- En el preview ampliado:
-  - Si es video: renderizar `<video controls autoplay>` apuntando a la URL original.
-  - Si es imagen: mantener `<img>` como hoy.
-- El botón de descarga apunta al archivo original sin transformación.
-- La barra de reacciones y contador siguen igual para ambos tipos.
-
-### `src/pages/GuestView.tsx` y `src/pages/EventDashboard.tsx`
-- Verificar que la recarga de fotos después de subir un video funcione igual que hoy (llamado a `getEventPhotos`).
-- No se esperan cambios mayores, solo asegurar que la lista refrescada incluya los nuevos campos.
-
-## Implementación del thumbnail de video
-Para evitar dependencias nuevas, se usará el API nativo del navegador:
-1. Crear un `<video>` oculto con `src = URL.createObjectURL(file)`.
-2. Esperar el evento `loadedmetadata` para obtener `videoWidth`/`videoHeight`.
-3. Buscar al frame en `seeked`, dibujar en un `<canvas>` y exportar como `canvas.toBlob('image/jpeg')`.
-4. Subir el blob resultante como thumbnail.
-
-## Pruebas de verificación
-- Subir una foto: sigue funcionando exactamente igual.
-- Subir un video desde móvil y desktop: aparece en la galería con ícono de play.
-- Click en video: se abre el reproductor con controles y se reproduce.
-- Swipe/navegación entre items del preview funciona con videos e imágenes mezclados.
-- Descargar video: descarga el archivo original.
-- Reacciones sobre videos se guardan y sincronizan en tiempo real.
-- El masonry no se deforma al cargar videos (layout shift mínimo).
-
-## Notas técnicas
-- Se mantiene el bucket `event-photos` público; no se requiere crear nuevo bucket.
-- Las transformaciones de imagen (`width`, `quality`, `resize: 'contain'`) de Supabase Storage siguen aplicándose solo a imágenes.
-- Se guardan las dimensiones reales en la base de datos para reservar el espacio del tile antes de que cargue el thumbnail.
+## Verificación
+- Subir 1 foto: barra va de 0→100%, botón muestra "¡Listo!" y vuelve a estado inicial tras ~1.2s.
+- Subir 3 archivos mezclados (fotos + video): contador avanza 1/3 → 2/3 → 3/3, cada uno con su % propio.
+- Forzar error (cortar red a mitad): botón vuelve a "Subir archivos", toast de error, se puede reintentar.
