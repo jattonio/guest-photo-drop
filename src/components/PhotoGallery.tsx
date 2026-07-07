@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { EventPhoto, PhotoReaction, getPhotoUrl, getPhotoReactions, toggleReaction, getGuestId } from '@/lib/eventStore';
+import { EventPhoto, PhotoReaction, getPhotoUrl, getVideoThumbnailUrl, getPhotoReactions, toggleReaction, getGuestId } from '@/lib/eventStore';
 import { supabase } from '@/integrations/supabase/client';
-import { X, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { X, Download, ChevronLeft, ChevronRight, Play } from 'lucide-react';
 
 interface PhotoGalleryProps {
   photos: EventPhoto[];
@@ -93,11 +93,77 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
     touchStartX.current = null;
   };
 
+  const VideoTile = ({ photo }: { photo: EventPhoto }) => {
+    const [thumbError, setThumbError] = useState(false);
+    const width = photo.width ?? undefined;
+    const height = photo.height ?? undefined;
+
+    if (thumbError) {
+      return (
+        <>
+          <div
+            className="w-full bg-foreground/10 flex items-center justify-center"
+            style={{ aspectRatio: width && height ? `${width}/${height}` : '3/4' }}
+          >
+            <Play className="w-10 h-10 text-foreground/50" />
+          </div>
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-10 h-10 rounded-full bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
+              <Play className="w-5 h-5 text-background fill-background" />
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    return (
+      <>
+        <img
+          src={getVideoThumbnailUrl(photo.file_path)}
+          alt={`Video de ${photo.guest_name}`}
+          width={width}
+          height={height}
+          className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
+          loading="lazy"
+          decoding="async"
+          onError={() => setThumbError(true)}
+        />
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="w-10 h-10 rounded-full bg-foreground/50 backdrop-blur-sm flex items-center justify-center">
+            <Play className="w-5 h-5 text-background fill-background" />
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  const renderTile = (photo: EventPhoto) => {
+    const isVideo = photo.media_type === 'video';
+    const width = photo.width ?? undefined;
+    const height = photo.height ?? undefined;
+
+    if (isVideo) {
+      return <VideoTile photo={photo} />;
+    }
+
+    return (
+      <img
+        src={getPhotoUrl(photo.file_path, 'thumb')}
+        alt={`Foto de ${photo.guest_name}`}
+        width={width}
+        height={height}
+        className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
+        loading="lazy"
+        decoding="async"
+      />
+    );
+  };
+
   if (photos.length === 0) {
     return (
       <div className="text-center py-16">
         <div className="text-6xl mb-4">📸</div>
-        <p className="text-muted-foreground text-lg">Aún no hay fotos</p>
+        <p className="text-muted-foreground text-lg">Aún no hay fotos ni videos</p>
         <p className="text-muted-foreground text-sm mt-1">¡Sé el primero en compartir un momento!</p>
       </div>
     );
@@ -116,13 +182,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               onClick={() => setSelectedIndex(index)}
             >
               <div className="relative rounded-lg overflow-hidden">
-                <img
-                  src={getPhotoUrl(photo.file_path, 'thumb')}
-                  alt={`Foto de ${photo.guest_name}`}
-                  className="w-full h-auto block group-hover:scale-105 transition-transform duration-300"
-                  loading="lazy"
-                  decoding="async"
-                />
+                {renderTile(photo)}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-foreground/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="text-xs text-background font-medium truncate">{photo.guest_name}</p>
                 </div>
@@ -183,11 +243,21 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           )}
 
           <div className="max-w-full max-h-full" onClick={(e) => e.stopPropagation()}>
-            <img
-              src={getPhotoUrl(selectedPhoto.file_path, 'large')}
-              alt=""
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
-            />
+            {selectedPhoto.media_type === 'video' ? (
+              <video
+                src={getPhotoUrl(selectedPhoto.file_path, 'original')}
+                controls
+                autoPlay
+                playsInline
+                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              />
+            ) : (
+              <img
+                src={getPhotoUrl(selectedPhoto.file_path, 'large')}
+                alt=""
+                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+              />
+            )}
             {/* Reactions bar */}
             <div className="mt-3 flex justify-center gap-1">
               {REACTION_EMOJIS.map(emoji => {
@@ -214,7 +284,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
               <a
                 href={getPhotoUrl(selectedPhoto.file_path, 'original')}
-                download={`foto-${selectedPhoto.id}.jpg`}
+                download={selectedPhoto.file_path.split('/').pop() || `archivo-${selectedPhoto.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-gold text-sm mt-1 hover:underline"

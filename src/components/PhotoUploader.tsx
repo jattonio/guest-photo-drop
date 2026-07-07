@@ -1,8 +1,8 @@
 import { useState, useRef, useCallback } from 'react';
-import { Camera, ImagePlus, X, Upload, Check } from 'lucide-react';
+import { Camera, ImagePlus, X, Upload, Check, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { uploadPhoto, addPhotoRecord } from '@/lib/eventStore';
+import { uploadMedia, addPhotoRecord, getMediaTypeFromFile } from '@/lib/eventStore';
 import { toast } from 'sonner';
 
 interface PhotoUploaderProps {
@@ -13,6 +13,7 @@ interface PhotoUploaderProps {
 interface FilePreview {
   file: File;
   previewUrl: string;
+  mediaType: 'image' | 'video';
 }
 
 const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
@@ -27,8 +28,8 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
     if (!files) return;
     const newPreviews: FilePreview[] = [];
     Array.from(files).forEach(file => {
-      if (!file.type.startsWith('image/')) return;
-      newPreviews.push({ file, previewUrl: URL.createObjectURL(file) });
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) return;
+      newPreviews.push({ file, previewUrl: URL.createObjectURL(file), mediaType: getMediaTypeFromFile(file) });
     });
     setPreviews(prev => [...prev, ...newPreviews]);
   }, []);
@@ -43,7 +44,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
 
   const handleUpload = async () => {
     if (previews.length === 0) {
-      toast.error('Selecciona al menos una foto');
+      toast.error('Selecciona al menos una foto o video');
       return;
     }
 
@@ -52,12 +53,12 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
 
     try {
       for (const { file } of previews) {
-        const publicUrl = await uploadPhoto(eventId, file);
-        await addPhotoRecord(eventId, publicUrl, name);
+        const { filePath, mediaType, width, height } = await uploadMedia(eventId, file);
+        await addPhotoRecord(eventId, filePath, name, mediaType, width, height);
       }
 
       setUploaded(true);
-      toast.success(`¡${previews.length} foto${previews.length > 1 ? 's' : ''} subida${previews.length > 1 ? 's' : ''}!`);
+      toast.success(`¡${previews.length} archivo${previews.length > 1 ? 's' : ''} subido${previews.length > 1 ? 's' : ''}!`);
       onPhotosUploaded?.();
 
       setTimeout(() => {
@@ -67,7 +68,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       }, 2000);
     } catch (err) {
       console.error('Upload error:', err);
-      toast.error('Error al subir las fotos. Intenta de nuevo.');
+      toast.error('Error al subir los archivos. Intenta de nuevo.');
     } finally {
       setUploading(false);
     }
@@ -93,7 +94,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
           className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-gold/30 bg-cream/50 hover:border-gold hover:bg-cream transition-all active:scale-95"
         >
           <Camera className="w-8 h-8 text-gold" />
-          <span className="text-sm font-medium text-foreground">Tomar foto</span>
+          <span className="text-sm font-medium text-foreground">Tomar foto o video</span>
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -107,7 +108,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       <input
         ref={cameraInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         capture="environment"
         className="hidden"
         onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
@@ -115,7 +116,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         multiple
         className="hidden"
         onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }}
@@ -124,12 +125,21 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       {previews.length > 0 && (
         <div className="space-y-4">
           <p className="text-sm text-muted-foreground">
-            {previews.length} foto{previews.length > 1 ? 's' : ''} seleccionada{previews.length > 1 ? 's' : ''}
+            {previews.length} archivo{previews.length > 1 ? 's' : ''} seleccionado{previews.length > 1 ? 's' : ''}
           </p>
           <div className="grid grid-cols-3 gap-2">
             {previews.map((p, i) => (
               <div key={i} className="relative aspect-square rounded-lg overflow-hidden group">
-                <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                {p.mediaType === 'video' ? (
+                  <video src={p.previewUrl} className="w-full h-full object-cover" preload="metadata" playsInline muted />
+                ) : (
+                  <img src={p.previewUrl} alt="" className="w-full h-full object-cover" />
+                )}
+                {p.mediaType === 'video' && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <Film className="w-6 h-6 text-white drop-shadow-md" />
+                  </div>
+                )}
                 <button
                   onClick={() => removePreview(i)}
                   className="absolute top-1 right-1 w-6 h-6 bg-foreground/70 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -155,7 +165,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
             ) : (
               <>
                 <Upload className="w-5 h-5 mr-2" />
-                Subir fotos
+                Subir archivos
               </>
             )}
           </Button>
