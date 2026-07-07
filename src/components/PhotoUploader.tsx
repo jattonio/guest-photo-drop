@@ -21,6 +21,8 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
   const [previews, setPreviews] = useState<FilePreview[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [currentPercent, setCurrentPercent] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,6 +34,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       newPreviews.push({ file, previewUrl: URL.createObjectURL(file), mediaType: getMediaTypeFromFile(file) });
     });
     setPreviews(prev => [...prev, ...newPreviews]);
+    setUploaded(false);
   }, []);
 
   const removePreview = (index: number) => {
@@ -49,26 +52,40 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
     }
 
     setUploading(true);
+    setCurrentIndex(0);
+    setCurrentPercent(0);
     const name = guestName.trim() || 'Invitado anónimo';
+    const total = previews.length;
 
     try {
-      for (const { file } of previews) {
-        const { filePath, mediaType, width, height } = await uploadMedia(eventId, file);
+      for (let i = 0; i < previews.length; i++) {
+        const { file } = previews[i];
+        setCurrentIndex(i + 1);
+        setCurrentPercent(0);
+        const { filePath, mediaType, width, height } = await uploadMedia(
+          eventId,
+          file,
+          (pct) => setCurrentPercent(pct),
+        );
         await addPhotoRecord(eventId, filePath, name, mediaType, width, height);
       }
 
       setUploaded(true);
-      toast.success(`¡${previews.length} archivo${previews.length > 1 ? 's' : ''} subido${previews.length > 1 ? 's' : ''}!`);
+      toast.success(`¡${total} archivo${total > 1 ? 's' : ''} subido${total > 1 ? 's' : ''}!`);
       onPhotosUploaded?.();
 
       setTimeout(() => {
         previews.forEach(p => URL.revokeObjectURL(p.previewUrl));
         setPreviews([]);
         setUploaded(false);
-      }, 2000);
+        setCurrentIndex(0);
+        setCurrentPercent(0);
+      }, 1200);
     } catch (err) {
       console.error('Upload error:', err);
       toast.error('Error al subir los archivos. Intenta de nuevo.');
+      setCurrentIndex(0);
+      setCurrentPercent(0);
     } finally {
       setUploading(false);
     }
@@ -153,7 +170,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
           <Button
             onClick={handleUpload}
             disabled={uploading || uploaded}
-            className="w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
+            className="relative overflow-hidden w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
           >
             {uploaded ? (
               <>
@@ -161,7 +178,15 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
                 ¡Listo!
               </>
             ) : uploading ? (
-              <span className="animate-pulse">Subiendo...</span>
+              <>
+                <span>
+                  Subiendo {currentIndex}/{previews.length} · {currentPercent}%
+                </span>
+                <span
+                  className="absolute left-0 bottom-0 h-1 bg-primary-foreground/80 transition-all duration-200"
+                  style={{ width: `${currentPercent}%` }}
+                />
+              </>
             ) : (
               <>
                 <Upload className="w-5 h-5 mr-2" />

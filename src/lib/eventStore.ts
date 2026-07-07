@@ -113,18 +113,56 @@ export function getFileExtension(file: File): string {
   return ext;
 }
 
-export async function uploadFile(eventId: string, file: File): Promise<string> {
+export async function uploadFile(
+  eventId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<string> {
   const ext = getFileExtension(file);
   const fileName = `${eventId}/${crypto.randomUUID()}.${ext}`;
 
-  const { error } = await supabase.storage
-    .from('event-photos')
-    .upload(fileName, file, { contentType: file.type });
+  if (!onProgress) {
+    const { error } = await supabase.storage
+      .from('event-photos')
+      .upload(fileName, file, { contentType: file.type });
+    if (error) throw error;
+    return fileName;
+  }
 
-  if (error) throw error;
+  // Progress-aware upload via XHR to Storage REST endpoint.
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+  const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData.session?.access_token || anonKey;
 
-  // Store the relative path (not the full URL) so we can request
-  // on-the-fly transformations later.
+  const url = `${supabaseUrl}/storage/v1/object/event-photos/${fileName}`;
+
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('apikey', anonKey);
+    xhr.setRequestHeader('x-upsert', 'false');
+    if (file.type) xhr.setRequestHeader('Content-Type', file.type);
+    xhr.setRequestHeader('cache-control', 'max-age=3600');
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(100);
+        resolve();
+      } else {
+        reject(new Error(`Upload failed (${xhr.status}): ${xhr.responseText}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error during upload'));
+    xhr.send(file);
+  });
+
   return fileName;
 }
 
@@ -203,7 +241,11 @@ export async function generateVideoThumbnail(file: File): Promise<Blob> {
   }
 }
 
-export async function uploadMedia(eventId: string, file: File): Promise<UploadMediaResult> {
+export async function uploadMedia(
+  eventId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<UploadMediaResult> {
   const mediaType = getMediaTypeFromFile(file);
   let width: number | null = null;
   let height: number | null = null;
@@ -216,7 +258,7 @@ export async function uploadMedia(eventId: string, file: File): Promise<UploadMe
     console.warn('No se pudieron leer las dimensiones del archivo:', err);
   }
 
-  const filePath = await uploadFile(eventId, file);
+  const filePath = await uploadFile(eventId, file, onProgress);
 
   if (mediaType === 'video') {
     try {
