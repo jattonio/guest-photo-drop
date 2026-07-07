@@ -6,6 +6,9 @@ export interface EventPhoto {
   guest_name: string;
   created_at: string;
   event_id: string;
+  media_type: 'image' | 'video';
+  width: number | null;
+  height: number | null;
 }
 
 export interface EventData {
@@ -16,6 +19,13 @@ export interface EventData {
   code: string;
   user_id: string | null;
   created_at: string;
+}
+
+export interface UploadMediaResult {
+  filePath: string;
+  mediaType: 'image' | 'video';
+  width: number;
+  height: number;
 }
 
 export function generateCode(): string {
@@ -72,10 +82,17 @@ export async function getEventPhotos(eventId: string): Promise<EventPhoto[]> {
   return data || [];
 }
 
-export async function addPhotoRecord(eventId: string, filePath: string, guestName: string): Promise<EventPhoto> {
+export async function addPhotoRecord(
+  eventId: string,
+  filePath: string,
+  guestName: string,
+  mediaType: 'image' | 'video' = 'image',
+  width: number | null = null,
+  height: number | null = null,
+): Promise<EventPhoto> {
   const { data, error } = await supabase
     .from('event_photos')
-    .insert({ event_id: eventId, file_path: filePath, guest_name: guestName })
+    .insert({ event_id: eventId, file_path: filePath, guest_name: guestName, media_type: mediaType, width, height })
     .select()
     .single();
 
@@ -83,8 +100,21 @@ export async function addPhotoRecord(eventId: string, filePath: string, guestNam
   return data;
 }
 
-export async function uploadPhoto(eventId: string, file: File): Promise<string> {
-  const ext = file.name.split('.').pop() || 'jpg';
+export function getMediaTypeFromFile(file: File): 'image' | 'video' {
+  return file.type.startsWith('video/') ? 'video' : 'image';
+}
+
+export function getFileExtension(file: File): string {
+  const ext = file.name.split('.').pop()?.toLowerCase();
+  if (!ext) {
+    if (file.type.startsWith('video/')) return 'mp4';
+    return 'jpg';
+  }
+  return ext;
+}
+
+export async function uploadFile(eventId: string, file: File): Promise<string> {
+  const ext = getFileExtension(file);
   const fileName = `${eventId}/${crypto.randomUUID()}.${ext}`;
 
   const { error } = await supabase.storage
@@ -96,6 +126,103 @@ export async function uploadPhoto(eventId: string, file: File): Promise<string> 
   // Store the relative path (not the full URL) so we can request
   // on-the-fly transformations later.
   return fileName;
+}
+
+export function getVideoThumbnailPath(videoPath: string): string {
+  // eventId/uuid.mp4 -> eventId/uuid-thumb.jpg
+  return videoPath.replace(/\.[^/.]+$/, '-thumb.jpg');
+}
+
+export async function getMediaDimensions(file: File): Promise<{ width: number; height: number }> {
+  const url = URL.createObjectURL(file);
+  try {
+    if (file.type.startsWith('video/')) {
+      return await new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        video.onloadedmetadata = () => {
+          resolve({ width: video.videoWidth, height: video.videoHeight });
+        };
+        video.onerror = () => reject(new Error('No se pudieron leer las dimensiones del video'));
+        video.src = url;
+        video.load();
+      });
+    }
+
+    return await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        resolve({ width: img.naturalWidth, height: img.naturalHeight });
+      };
+      img.onerror = () => reject(new Error('No se pudieron leer las dimensiones de la imagen'));
+      img.src = url;
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export async function generateVideoThumbnail(file: File): Promise<Blob> {
+  const url = URL.createObjectURL(file);
+  try {
+    const video = document.createElement('video');
+    video.src = url;
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+
+    await new Promise<void>((resolve, reject) => {
+      video.onloadedmetadata = () => resolve();
+      video.onerror = () => reject(new Error('Error al cargar video para thumbnail'));
+      video.load();
+    });
+
+    // Seek a bit in to avoid a black first frame.
+    video.currentTime = video.duration ? Math.min(0.5, video.duration / 2) : 0.1;
+
+    await new Promise<void>((resolve, reject) => {
+      video.onseeked = () => resolve();
+      video.onerror = () => reject(new Error('Error al buscar frame del video'));
+    });
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('No se pudo crear canvas');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('No se pudo generar thumbnail'));
+      }, 'image/jpeg', 0.85);
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+export async function uploadMedia(eventId: string, file: File): Promise<UploadMediaResult> {
+  const mediaType = getMediaTypeFromFile(file);
+  const dimensions = await getMediaDimensions(file);
+  const filePath = await uploadFile(eventId, file);
+
+  if (mediaType === 'video') {
+    const thumbBlob = await generateVideoThumbnail(file);
+    const thumbPath = getVideoThumbnailPath(filePath);
+    const { error } = await supabase.storage
+      .from('event-photos')
+      .upload(thumbPath, thumbBlob, { contentType: 'image/jpeg' });
+    if (error) throw error;
+  }
+
+  return { filePath, mediaType, width: dimensions.width, height: dimensions.height };
+}
+
+// Backwards-compatible alias for existing call sites.
+export async function uploadPhoto(eventId: string, file: File): Promise<string> {
+  return uploadFile(eventId, file);
 }
 
 export interface PhotoReaction {
@@ -177,4 +304,10 @@ export function getPhotoUrl(filePath: string, size: PhotoSize = 'original'): str
       : { width: 1600, quality: 85, resize: 'contain' as const };
 
   return bucket.getPublicUrl(path, { transform }).data.publicUrl;
+}
+
+export function getVideoThumbnailUrl(videoPath: string): string {
+  const path = toBucketPath(videoPath);
+  const thumbPath = getVideoThumbnailPath(path);
+  return supabase.storage.from('event-photos').getPublicUrl(thumbPath).data.publicUrl;
 }
