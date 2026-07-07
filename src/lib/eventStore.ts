@@ -97,7 +97,7 @@ export async function addPhotoRecord(
     .single();
 
   if (error) throw error;
-  return data;
+  return { ...data, media_type: data.media_type as 'image' | 'video' };
 }
 
 export function getMediaTypeFromFile(file: File): 'image' | 'video' {
