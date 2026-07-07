@@ -1,33 +1,79 @@
-# Galería estilo Pinterest
+## Objetivo
+Extender el flujo actual de fotos para que los invitados puedan subir videos desde el mismo selector, visualizarlos en la galería masonry estilo Pinterest sin deformar el layout, reproducirlos en el preview ampliado y descargar el archivo original.
 
-## Cambios en `src/components/PhotoGallery.tsx`
+## Alcance
+- Mismo botón de subida para fotos y videos (`image/*,video/*`).
+- Thumbnail estático con ícono de play en el masonry.
+- Reproductor de video nativo en el preview ampliado.
+- Descarga del archivo original tal cual se subió.
+- Las reacciones por emoji seguirán funcionando sobre videos igual que sobre fotos.
+- Sin límite de duración ni tamaño (tal como indicaste).
 
-### 1. Distribución masonry responsive
-Reemplazar el contenedor del grid:
+## Cambios en base de datos (migración)
+1. Agregar a `event_photos`:
+   - `media_type text not null default 'image'` — valores `'image'` o `'video'`.
+   - `width integer` y `height integer` — dimensiones reales del archivo (foto o video). Sirven para reservar el espacio correcto en el masonry y evitar layout shift.
+2. Mantener `file_path` como referencia al archivo principal (video o imagen).
+3. No se modifican las políticas RLS existentes; la tabla sigue pública para subidas y lecturas.
 
-```
-columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-2 space-y-2
-```
+## Cambios en almacenamiento
+- Reutilizar el bucket público `event-photos` para videos.
+- Para cada video, generar en el cliente un thumbnail JPEG del primer frame y subirlo al mismo bucket con un sufijo identificable (por ejemplo `eventId/uuid-thumb.jpg`), junto al video original (`eventId/uuid.mp4`).
 
-Resultado:
-- Mobile (<640px): **2 columnas**
-- Tablet sm (≥640px): **3 columnas**
-- Tablet md (≥768px): **4 columnas**
-- Desktop lg (≥1024px): **5 columnas**
+## Cambios en frontend
 
-Se mantiene `break-inside-avoid` en cada tarjeta y `loading="lazy"` + `decoding="async"` para el rendimiento del scroll infinito paginado (30 en 30, ya existente).
+### `src/lib/eventStore.ts`
+- Extender `EventPhoto` con `media_type`, `width`, `height`.
+- Agregar `uploadMedia(eventId, file, guestName)` que:
+  - Detecte si el archivo es imagen o video.
+  - Para videos: extraiga `width`/`height` y genere un thumbnail del primer frame.
+  - Suba el archivo principal y, en caso de video, el thumbnail.
+  - Guarde el registro en `event_photos` con `media_type` y dimensiones.
+- Agregar helpers:
+  - `getMediaUrl(filePath, 'original')` para descarga.
+  - `getMediaUrl(filePath, 'thumb')` / `'large'` para imágenes (funcionan igual que hoy).
+  - `getVideoThumbnailUrl(videoPath)` para obtener el thumbnail del primer frame.
 
-### 2. Preview (modal) a 1600px conservando proporción
-El modal ya usa `getPhotoUrl(selectedPhoto.file_path, 'large')`, que en `src/lib/eventStore.ts` pide la transformación `{ width: 1600, quality: 85 }` a Supabase Storage. Storage escala manteniendo la proporción original (solo se fija el ancho), así que alto y ancho quedan proporcionales a la foto original. No requiere cambios.
+### `src/components/PhotoUploader.tsx`
+- Cambiar los inputs de `accept="image/*"` a `accept="image/*,video/*"`.
+- En el preview previo a subir, mostrar:
+  - `<img>` para fotos.
+  - `<video>` con poster/controls desactivados para videos.
+- Actualizar textos para reflejar "fotos y videos".
 
-Se ajusta el `<img>` del modal para que respete la proporción sin recortar y sin forzar altura excesiva:
-- Se mantiene `object-contain`.
-- `max-h-[70vh]` se sustituye por `max-h-[85vh]` para aprovechar mejor la pantalla en desktop (opcional, dentro del alcance visual de "preview").
+### `src/components/PhotoGallery.tsx`
+- Leer `media_type` y dimensiones de cada registro.
+- En el tile masonry:
+  - Si es imagen: renderizar `<img>` como hoy.
+  - Si es video: renderizar `<img src={thumbnail}>` con un overlay de ícono de play.
+  - Usar `aspect-ratio` o un `padding-bottom` derivado de `width/height` para mantener el espacio reservado mientras carga el thumbnail.
+- En el preview ampliado:
+  - Si es video: renderizar `<video controls autoplay>` apuntando a la URL original.
+  - Si es imagen: mantener `<img>` como hoy.
+- El botón de descarga apunta al archivo original sin transformación.
+- La barra de reacciones y contador siguen igual para ambos tipos.
 
-### 3. Descarga = original
-El enlace de descarga ya usa `getPhotoUrl(..., 'original')`, que retorna la URL pública sin transformación → descarga el archivo tal cual se subió. No requiere cambios.
+### `src/pages/GuestView.tsx` y `src/pages/EventDashboard.tsx`
+- Verificar que la recarga de fotos después de subir un video funcione igual que hoy (llamado a `getEventPhotos`).
+- No se esperan cambios mayores, solo asegurar que la lista refrescada incluya los nuevos campos.
 
-## Fuera de alcance
-- No se toca el uploader, ni la lógica de reacciones, ni el store.
-- No se recomprime nada en cliente ni servidor.
-- No se cambia la paleta ni tipografía.
+## Implementación del thumbnail de video
+Para evitar dependencias nuevas, se usará el API nativo del navegador:
+1. Crear un `<video>` oculto con `src = URL.createObjectURL(file)`.
+2. Esperar el evento `loadedmetadata` para obtener `videoWidth`/`videoHeight`.
+3. Buscar al frame en `seeked`, dibujar en un `<canvas>` y exportar como `canvas.toBlob('image/jpeg')`.
+4. Subir el blob resultante como thumbnail.
+
+## Pruebas de verificación
+- Subir una foto: sigue funcionando exactamente igual.
+- Subir un video desde móvil y desktop: aparece en la galería con ícono de play.
+- Click en video: se abre el reproductor con controles y se reproduce.
+- Swipe/navegación entre items del preview funciona con videos e imágenes mezclados.
+- Descargar video: descarga el archivo original.
+- Reacciones sobre videos se guardan y sincronizan en tiempo real.
+- El masonry no se deforma al cargar videos (layout shift mínimo).
+
+## Notas técnicas
+- Se mantiene el bucket `event-photos` público; no se requiere crear nuevo bucket.
+- Las transformaciones de imagen (`width`, `quality`, `resize: 'contain'`) de Supabase Storage siguen aplicándose solo a imágenes.
+- Se guardan las dimensiones reales en la base de datos para reservar el espacio del tile antes de que cargue el thumbnail.
