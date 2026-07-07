@@ -20,21 +20,30 @@ export type Database = {
           event_id: string
           file_path: string
           guest_name: string
+          height: number | null
           id: string
+          media_type: string
+          width: number | null
         }
         Insert: {
           created_at?: string
           event_id: string
           file_path: string
           guest_name?: string
+          height?: number | null
           id?: string
+          media_type?: string
+          width?: number | null
         }
         Update: {
           created_at?: string
           event_id?: string
           file_path?: string
           guest_name?: string
+          height?: number | null
           id?: string
+          media_type?: string
+          width?: number | null
         }
         Relationships: [
           {
