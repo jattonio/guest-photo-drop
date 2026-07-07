@@ -241,7 +241,11 @@ export async function generateVideoThumbnail(file: File): Promise<Blob> {
   }
 }
 
-export async function uploadMedia(eventId: string, file: File): Promise<UploadMediaResult> {
+export async function uploadMedia(
+  eventId: string,
+  file: File,
+  onProgress?: (percent: number) => void,
+): Promise<UploadMediaResult> {
   const mediaType = getMediaTypeFromFile(file);
   let width: number | null = null;
   let height: number | null = null;
@@ -254,7 +258,7 @@ export async function uploadMedia(eventId: string, file: File): Promise<UploadMe
     console.warn('No se pudieron leer las dimensiones del archivo:', err);
   }
 
-  const filePath = await uploadFile(eventId, file);
+  const filePath = await uploadFile(eventId, file, onProgress);
 
   if (mediaType === 'video') {
     try {
