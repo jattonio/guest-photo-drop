@@ -107,7 +107,16 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
         </label>
         <Input
           value={guestName}
-          onChange={(e) => setGuestName(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setGuestName(value);
+            const trimmed = value.trim();
+            if (trimmed) {
+              localStorage.setItem('guest_name', trimmed);
+            } else {
+              localStorage.removeItem('guest_name');
+            }
+          }}
           placeholder="¿Cómo te llamas?"
           className="bg-card border-border"
         />
