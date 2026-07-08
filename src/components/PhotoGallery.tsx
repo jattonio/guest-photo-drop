@@ -355,13 +355,6 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             <div className="mt-2 text-center">
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
-              <button
-                onClick={() => downloadMedia(selectedPhoto)}
-                className="inline-flex items-center gap-1 text-gold text-sm mt-1 hover:underline"
-              >
-                <Download className="w-4 h-4" />
-                Descargar
-              </button>
             </div>
           </div>
         </div>
