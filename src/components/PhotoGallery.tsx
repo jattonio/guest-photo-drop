@@ -328,7 +328,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               <img
                 src={getPhotoUrl(selectedPhoto.file_path, 'large')}
                 alt=""
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                className="max-w-full max-h-[65vh] object-contain rounded-lg"
               />
             )}
             {/* Reactions bar */}
