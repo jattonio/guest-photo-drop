@@ -2,6 +2,52 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { EventPhoto, PhotoReaction, getPhotoUrl, getVideoThumbnailUrl, getPhotoReactions, toggleReaction, getGuestId } from '@/lib/eventStore';
 import { supabase } from '@/integrations/supabase/client';
 import { X, Download, ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { toast } from 'sonner';
+
+const isTouchDevice = () => {
+  if (typeof window === 'undefined') return false;
+  return (
+    'ontouchstart' in window ||
+    (navigator.maxTouchPoints ?? 0) > 0 ||
+    window.matchMedia('(pointer: coarse)').matches
+  );
+};
+
+const downloadMedia = async (photo: EventPhoto) => {
+  const url = getPhotoUrl(photo.file_path, 'original');
+  const filename = photo.file_path.split('/').pop() || `archivo-${photo.id}`;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('fetch failed');
+    const blob = await res.blob();
+    const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+
+    if (
+      isTouchDevice() &&
+      typeof navigator.canShare === 'function' &&
+      navigator.canShare({ files: [file] })
+    ) {
+      try {
+        await navigator.share({ files: [file] });
+        return;
+      } catch (err) {
+        if ((err as DOMException)?.name === 'AbortError') return;
+        // fall through to blob download
+      }
+    }
+
+    const objectUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = objectUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+  } catch (e) {
+    toast.error('No se pudo descargar el archivo');
+  }
+};
 
 interface PhotoGalleryProps {
   photos: EventPhoto[];
