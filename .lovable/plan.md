@@ -1,30 +1,15 @@
-## Descarga inteligente en la galería
+## Descargar visible en el lightbox
 
-Cambiar el botón "Descargar" del lightbox en `src/components/PhotoGallery.tsx` para que se comporte distinto según el dispositivo.
+En el lightbox de `src/components/PhotoGallery.tsx`, el botón "Descargar" queda debajo del viewport en móvil porque la imagen/video usa `max-h-[85vh]` y debajo se apilan la barra de reacciones, nombre, contador y descargar.
 
-### Comportamiento
+### Cambios
 
-- **Desktop**: descarga el archivo a la carpeta de Descargas del navegador (comportamiento actual mejorado — usar `fetch` + `blob` + enlace temporal con `download` para forzar descarga real en lugar de abrir en nueva pestaña).
-- **Mobile / Tablet**: abrir el diálogo nativo del sistema (share sheet) usando la **Web Share API con archivos** (`navigator.share({ files: [...] })`). Desde ahí el invitado elige "Guardar en Fotos" (iOS) o "Guardar imagen/video" (Android), que lo lleva directo a la galería del teléfono.
-  - Si el navegador no soporta compartir archivos (`navigator.canShare({ files })` = false), usar como fallback el mismo flujo blob + `<a download>`.
-
-### Detección
-
-- Usar el hook existente `useIsMobile` para desktop vs. mobile.
-- Para tablet, ampliar la detección a `window.innerWidth < 1024` o `navigator.maxTouchPoints > 0` en combinación con user agent — o simplemente tratar todo lo táctil (mobile + tablet) como "mobile" para este flujo.
-
-### Cambios de código
-
-- **`src/components/PhotoGallery.tsx`**:
-  - Reemplazar el `<a href download>` por un `<button>` que invoque `handleDownload(selectedPhoto)`.
-  - Nueva función `handleDownload`:
-    1. `fetch(getPhotoUrl(photo.file_path, 'original'))` → `blob()` → `File`.
-    2. Si es táctil y `navigator.canShare({ files: [file] })`: `await navigator.share({ files: [file] })`.
-    3. Si no: crear URL con `URL.createObjectURL(blob)`, `<a download={filename}>`, click programático, `revokeObjectURL`.
-  - Manejar errores con toast (`sonner`) — pero silenciar `AbortError` cuando el usuario cierra el share sheet.
-  - Nombre de archivo: derivar del `file_path` (ya se hace hoy).
+- **Reducir la altura del media** para dejar espacio a los controles inferiores: cambiar `max-h-[85vh]` a `max-h-[65vh]` (o `70vh`) tanto en el `<img>` del lightbox como en el `<video>` de `LightboxVideo`.
+- **Mover "Descargar" a la barra superior** junto al botón de cerrar (X), como icono circular con el mismo estilo (`w-10 h-10 bg-background/20 rounded-full`). Así siempre está visible sin depender del scroll.
+  - Al hacer click llama a `downloadMedia(selectedPhoto)` (función ya existente).
+  - Se elimina el botón "Descargar" de la sección inferior para evitar duplicados.
+- Mantener reacciones, nombre e índice `N / total` debajo del media.
 
 ### Fuera de alcance
 
-- No se toca el uploader ni otras rutas.
-- No se agregan botones de "compartir" adicionales — solo se cambia el comportamiento del botón "Descargar".
+- No se cambia la lógica de descarga ni el resto de la galería.

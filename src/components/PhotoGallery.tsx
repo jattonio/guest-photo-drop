@@ -152,7 +152,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           preload="auto"
           onCanPlay={() => setReady(true)}
           onLoadedData={() => setReady(true)}
-          className="max-w-full max-h-[85vh] object-contain rounded-lg"
+          className="max-w-full max-h-[65vh] object-contain rounded-lg"
         />
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -295,6 +295,13 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           >
             <X className="w-6 h-6 text-background" />
           </button>
+          <button
+            className="absolute top-4 right-16 w-10 h-10 bg-background/20 rounded-full flex items-center justify-center z-10"
+            onClick={(e) => { e.stopPropagation(); downloadMedia(selectedPhoto); }}
+            aria-label="Descargar"
+          >
+            <Download className="w-5 h-5 text-background" />
+          </button>
 
           {selectedIndex > 0 && (
             <button
@@ -321,7 +328,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
               <img
                 src={getPhotoUrl(selectedPhoto.file_path, 'large')}
                 alt=""
-                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                className="max-w-full max-h-[65vh] object-contain rounded-lg"
               />
             )}
             {/* Reactions bar */}
@@ -348,13 +355,6 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             <div className="mt-2 text-center">
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
-              <button
-                onClick={() => downloadMedia(selectedPhoto)}
-                className="inline-flex items-center gap-1 text-gold text-sm mt-1 hover:underline"
-              >
-                <Download className="w-4 h-4" />
-                Descargar
-              </button>
             </div>
           </div>
         </div>
