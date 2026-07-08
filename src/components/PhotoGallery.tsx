@@ -152,7 +152,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           preload="auto"
           onCanPlay={() => setReady(true)}
           onLoadedData={() => setReady(true)}
-          className="max-w-full max-h-[85vh] object-contain rounded-lg"
+          className="max-w-full max-h-[65vh] object-contain rounded-lg"
         />
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
