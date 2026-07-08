@@ -295,6 +295,13 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           >
             <X className="w-6 h-6 text-background" />
           </button>
+          <button
+            className="absolute top-4 right-16 w-10 h-10 bg-background/20 rounded-full flex items-center justify-center z-10"
+            onClick={(e) => { e.stopPropagation(); downloadMedia(selectedPhoto); }}
+            aria-label="Descargar"
+          >
+            <Download className="w-5 h-5 text-background" />
+          </button>
 
           {selectedIndex > 0 && (
             <button
