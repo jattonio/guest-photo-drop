@@ -348,16 +348,13 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
             <div className="mt-2 text-center">
               <p className="text-background/90 text-sm">{selectedPhoto.guest_name}</p>
               <p className="text-background/50 text-xs mt-0.5">{selectedIndex + 1} / {photos.length}</p>
-              <a
-                href={getPhotoUrl(selectedPhoto.file_path, 'original')}
-                download={selectedPhoto.file_path.split('/').pop() || `archivo-${selectedPhoto.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => downloadMedia(selectedPhoto)}
                 className="inline-flex items-center gap-1 text-gold text-sm mt-1 hover:underline"
               >
                 <Download className="w-4 h-4" />
                 Descargar
-              </a>
+              </button>
             </div>
           </div>
         </div>
