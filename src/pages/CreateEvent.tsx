@@ -38,7 +38,7 @@ const CreateEvent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-6 py-8">
         <button
           onClick={() => navigate('/')}
@@ -49,10 +49,10 @@ const CreateEvent = () => {
         </button>
 
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cream border border-gold/20 mb-4">
-            <PartyPopper className="w-8 h-8 text-gold" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-soft border border-brand-primary/20 mb-4">
+            <PartyPopper className="w-8 h-8 text-brand-primary" />
           </div>
-          <h1 className="font-display text-2xl font-bold">Crear evento</h1>
+          <h1 className="font-heading text-2xl font-bold">Crear evento</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Configura tu evento en segundos
           </p>
@@ -74,7 +74,7 @@ const CreateEvent = () => {
           <Button
             onClick={handleCreate}
             disabled={creating}
-            className="w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
+            className="w-full bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark h-12 text-base"
           >
             <Sparkles className="w-5 h-5 mr-2" />
             {creating ? 'Creando...' : 'Crear evento'}

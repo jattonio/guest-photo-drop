@@ -39,15 +39,15 @@ const Auth = () => {
         toast.success('¡Bienvenido!');
         navigate('/');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error de autenticación');
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Error de autenticación');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-6 py-8">
         <button
           onClick={() => navigate('/')}
@@ -58,14 +58,14 @@ const Auth = () => {
         </button>
 
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-cream border border-gold/20 mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-brand-soft border border-brand-primary/20 mb-4">
             {mode === 'login' ? (
-              <LogIn className="w-8 h-8 text-gold" />
+              <LogIn className="w-8 h-8 text-brand-primary" />
             ) : (
-              <UserPlus className="w-8 h-8 text-gold" />
+              <UserPlus className="w-8 h-8 text-brand-primary" />
             )}
           </div>
-          <h1 className="font-display text-2xl font-bold">
+          <h1 className="font-heading text-2xl font-bold">
             {mode === 'login' ? 'Iniciar sesión' : 'Crear cuenta'}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -110,7 +110,7 @@ const Auth = () => {
           <Button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
+            className="w-full bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark h-12 text-base"
           >
             {loading
               ? 'Cargando...'
@@ -123,7 +123,7 @@ const Auth = () => {
             <button
               type="button"
               onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-              className="text-gold font-medium hover:underline"
+              className="text-brand-primary font-medium hover:underline"
             >
               {mode === 'login' ? 'Regístrate' : 'Inicia sesión'}
             </button>

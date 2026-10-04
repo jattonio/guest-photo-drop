@@ -1,57 +1,145 @@
+/*
+ * Los tokens de este archivo vienen de la Guía de Estilos Fotiva v1.0.
+ * NO agregues colores sueltos aquí ni en componentes (ni HEX, ni hsl(), ni rgb()):
+ * si hace falta un color nuevo, primero se agrega a la guía y luego se define
+ * como token abajo y se mapea en tailwind.config.ts.
+ *
+ * Dos formas por diseño:
+ *  - HEX (--brand-primary, --neutral-ink, …): uso directo y base de las clases
+ *    de Tailwind brand.*, energy.*, neutral.*, etc.
+ *  - HSL sin hsl() (--primary, --background, …): lo que lee shadcn/Radix,
+ *    mapeado a los colores de Fotiva. Si cambias un HEX, actualiza su HSL.
+ *
+ * Espaciado: se usa la escala por defecto de Tailwind, que ya es base de 4px.
+ */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
-
 @layer base {
   :root {
-    --background: 40 33% 98%;
-    --foreground: 30 10% 15%;
+    /* ---- Tokens HEX (Guía v1.0) ---- */
+    /* Brand */
+    --brand-primary: #635BFF;
+    --brand-dark: #4038C9;
+    --brand-soft: #EEECFF;
+    /* Energy */
+    --energy-orange: #FF7A45;
+    --energy-orange-soft: #FFF0E9;
+    --energy-coral: #FF4F6D;
+    --energy-coral-deep: #C81E42; /* fondo con texto blanco (5.6:1); #FF4F6D solo para puntos, bordes y rellenos */
+    /* Semantic: success/error solo para íconos y rellenos; para texto, *-text */
+    --success: #19B87A;
+    --success-text: #0E7C52;
+    --warning: #F4B740;
+    --error: #E5484D;
+    --error-text: #C13B3F;
+    /* Neutral */
+    --neutral-ink: #17152A;
+    --neutral-slate: #68657A;
+    --neutral-border: #E9E7EF;
+    --neutral-surface: #FFFFFF;
+    --neutral-background: #FCFBF8;
+    /* Dark (se aplican con .dark) */
+    --dark-background: #17152A;
+    --dark-surface: #24213A;
+    --dark-surface-elevated: #2D2947;
+    --dark-text: #FFFFFF;
+    --dark-text-secondary: #B7B3C7;
+    --dark-border: #3A3655;
+    --dark-primary: #8A83FF;
+    --dark-energy: #FF7A45;
+    --dark-live: #FF4F6D;
 
-    --card: 40 30% 97%;
-    --card-foreground: 30 10% 15%;
+    /* Radios Fotiva (no sustituyen la escala de Tailwind: rounded-fotiva-*) */
+    --radius-fotiva-sm: 8px;
+    --radius-fotiva-md: 12px;
+    --radius-fotiva-lg: 16px;
+    --radius-fotiva-xl: 24px;
+    --radius-fotiva-2xl: 32px;
 
+    /* Fuentes */
+    --font-heading: 'Plus Jakarta Sans', 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* ---- Variables HSL que consume shadcn (tema claro) ---- */
+    --background: 45 40% 98%;               /* neutral-background */
+    --foreground: 245.7 33.3% 12.4%;        /* neutral-ink */
+
+    --card: 0 0% 100%;                      /* neutral-surface */
+    --card-foreground: 245.7 33.3% 12.4%;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 10% 15%;
+    --popover-foreground: 245.7 33.3% 12.4%;
 
-    --primary: 36 72% 52%;
+    --primary: 242.9 100% 67.8%;            /* brand-primary */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 30 25% 93%;
-    --secondary-foreground: 30 10% 25%;
+    --secondary: 246.3 100% 96.3%;          /* brand-soft */
+    --secondary-foreground: 243.3 57.3% 50.4%; /* brand-dark */
 
-    --muted: 35 20% 94%;
-    --muted-foreground: 30 8% 50%;
+    --muted: 246.3 100% 96.3%;              /* brand-soft */
+    --muted-foreground: 248.6 9.4% 43.7%;   /* neutral-slate */
 
-    --accent: 36 72% 52%;
+    --accent: 246.3 100% 96.3%;             /* brand-soft */
+    --accent-foreground: 243.3 57.3% 50.4%; /* brand-dark */
+
+    /* Fondo destructivo = error-text (blanco encima ≈5:1); #E5484D no llega a AA con texto blanco */
+    --destructive: 358.2 53.2% 49.4%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 255 20% 92.2%;                /* neutral-border */
+    --input: 255 20% 92.2%;
+    --ring: 242.9 100% 67.8%;
+
+    --radius: 0.75rem;                      /* 12px */
+
+    --sidebar-background: 45 40% 98%;
+    --sidebar-foreground: 245.7 33.3% 12.4%;
+    --sidebar-primary: 242.9 100% 67.8%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 246.3 100% 96.3%;
+    --sidebar-accent-foreground: 243.3 57.3% 50.4%;
+    --sidebar-border: 255 20% 92.2%;
+    --sidebar-ring: 242.9 100% 67.8%;
+  }
+
+  .dark {
+    --background: 245.7 33.3% 12.4%;        /* dark-background */
+    --foreground: 0 0% 100%;                /* dark-text */
+
+    --card: 247.2 27.5% 17.8%;              /* dark-surface */
+    --card-foreground: 0 0% 100%;
+    --popover: 248 26.8% 22%;               /* dark-surface-elevated */
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 243.4 100% 75.7%;            /* dark-primary */
+    --primary-foreground: 245.7 33.3% 12.4%; /* tinta: blanco sobre #8A83FF no llega a AA */
+
+    --secondary: 248 26.8% 22%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 247.2 27.5% 17.8%;
+    --muted-foreground: 252 15.2% 74.1%;    /* dark-text-secondary */
+
+    --accent: 248 26.8% 22%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 358.2 53.2% 49.4%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 35 20% 88%;
-    --input: 35 20% 88%;
-    --ring: 36 72% 52%;
+    --border: 247.7 22.3% 27.3%;            /* dark-border */
+    --input: 247.7 22.3% 27.3%;
+    --ring: 243.4 100% 75.7%;
 
-    --radius: 0.75rem;
-
-    --gold: 36 72% 52%;
-    --gold-light: 40 60% 70%;
-    --gold-dark: 32 80% 40%;
-    --cream: 40 33% 96%;
-    --warm-gray: 30 8% 50%;
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 247.2 27.5% 17.8%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 243.4 100% 75.7%;
+    --sidebar-primary-foreground: 245.7 33.3% 12.4%;
+    --sidebar-accent: 248 26.8% 22%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 247.7 22.3% 27.3%;
+    --sidebar-ring: 243.4 100% 75.7%;
   }
 }
 
@@ -61,29 +149,11 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, sans-serif;
+    @apply bg-background text-foreground font-sans antialiased;
   }
 }
 
 @layer utilities {
-  .text-gradient-gold {
-    @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 50%, hsl(var(--gold)) 100%);
-  }
-
-  .bg-gradient-gold {
-    background-image: linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-dark)) 100%);
-  }
-
-  .bg-gradient-hero {
-    background-image: linear-gradient(180deg, hsl(var(--cream)) 0%, hsl(var(--background)) 100%);
-  }
-
-  .shadow-gold {
-    box-shadow: 0 4px 20px -4px hsl(var(--gold) / 0.3);
-  }
-
   .animate-float {
     animation: float 3s ease-in-out infinite;
   }

@@ -156,7 +156,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
         />
         {!ready && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-10 h-10 rounded-full border-2 border-gold border-t-transparent animate-spin" />
+            <div className="w-10 h-10 rounded-full border-2 border-brand-primary border-t-transparent animate-spin" />
           </div>
         )}
       </div>
@@ -274,7 +274,7 @@ const PhotoGallery = ({ photos }: PhotoGalleryProps) => {
           <div className="mt-6 flex justify-center">
             <button
               onClick={() => setVisibleCount(c => Math.min(c + PAGE_SIZE, photos.length))}
-              className="px-6 py-2.5 rounded-full bg-card border border-gold/30 text-sm font-medium text-foreground hover:bg-cream transition-all"
+              className="px-6 py-2.5 rounded-full bg-card border border-brand-primary/30 text-sm font-medium text-foreground hover:bg-brand-soft transition-all"
             >
               Cargar {Math.min(PAGE_SIZE, photos.length - visibleCount)} más ({visibleCount} de {photos.length})
             </button>

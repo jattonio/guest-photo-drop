@@ -25,7 +25,7 @@ const EventDashboard = () => {
     }
     if (!id) return;
     getEventById(id).then(e => {
-      if (e && (e as any).user_id === user.id) {
+      if (e && e.user_id === user.id) {
         setEvent(e);
         getEventPhotos(e.id).then(setPhotos);
       } else {
@@ -67,7 +67,7 @@ const EventDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       <div className="max-w-2xl mx-auto px-6 py-8">
         <button
           onClick={() => navigate('/')}
@@ -78,7 +78,7 @@ const EventDashboard = () => {
         </button>
 
         <div className="mb-6">
-          <h1 className="font-display text-2xl font-bold">{event.name}</h1>
+          <h1 className="font-heading text-2xl font-bold">{event.name}</h1>
           {event.date && (
             <p className="text-sm text-muted-foreground mt-1">
               {new Date(event.date).toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
@@ -91,7 +91,7 @@ const EventDashboard = () => {
             onClick={() => setTab('qr')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'qr'
-                ? 'bg-gradient-gold text-primary-foreground shadow-gold'
+                ? 'bg-brand-primary text-primary-foreground shadow-brand'
                 : 'bg-card border border-border text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -102,7 +102,7 @@ const EventDashboard = () => {
             onClick={() => setTab('gallery')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'gallery'
-                ? 'bg-gradient-gold text-primary-foreground shadow-gold'
+                ? 'bg-brand-primary text-primary-foreground shadow-brand'
                 : 'bg-card border border-border text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -116,21 +116,21 @@ const EventDashboard = () => {
             <p className="text-muted-foreground text-sm">
               Imprime este QR y colócalo en las mesas de tus invitados
             </p>
-            <div className="inline-block p-6 bg-background rounded-2xl border border-border">
-              <QRCodeSVG value={eventUrl} size={200} level="H" fgColor="hsl(30, 10%, 15%)" bgColor="transparent" />
+            <div className="inline-block p-6 bg-background rounded-2xl border border-border text-neutral-ink">
+              <QRCodeSVG value={eventUrl} size={200} level="H" fgColor="currentColor" bgColor="transparent" />
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-2">Código del evento</p>
               <div className="flex items-center justify-center gap-2">
                 <span className="font-mono text-2xl font-bold tracking-[0.3em] text-foreground">{event.code}</span>
-                <button onClick={copyCode} className="text-gold hover:text-gold-dark"><Copy className="w-4 h-4" /></button>
+                <button onClick={copyCode} className="text-brand-primary hover:text-brand-dark"><Copy className="w-4 h-4" /></button>
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={copyLink} className="flex-1 border-gold/30 hover:bg-cream">
+              <Button variant="outline" onClick={copyLink} className="flex-1 border-brand-primary/30 hover:bg-brand-soft">
                 <Copy className="w-4 h-4 mr-2" />Copiar enlace
               </Button>
-              <Button variant="outline" onClick={() => window.print()} className="flex-1 border-gold/30 hover:bg-cream">
+              <Button variant="outline" onClick={() => window.print()} className="flex-1 border-brand-primary/30 hover:bg-brand-soft">
                 <Download className="w-4 h-4 mr-2" />Imprimir QR
               </Button>
             </div>

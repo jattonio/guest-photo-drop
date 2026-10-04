@@ -41,8 +41,8 @@ Providers en `App.tsx`: `QueryClientProvider` → `AuthProvider` → `TooltipPro
 
 - `src/main.tsx` — punto de entrada React.
 - `src/App.tsx` — providers y definición de rutas.
-- `src/index.css` — **tokens de diseño** (variables CSS HSL, gradientes `gold`, sombras, animación `float`).
-- `tailwind.config.ts` — mapea los tokens a colores/fuentes de Tailwind (`gold`, `cream`, `font-display` = Playfair Display, `font-sans` = Inter).
+- `src/index.css` — **tokens de diseño** de la Guía de Estilos Fotiva v1.0 (HEX + HSL para shadcn, tema `.dark`, radios `fotiva`, animación `float`).
+- `tailwind.config.ts` — mapea los tokens a colores/fuentes de Tailwind (`brand.*`, `energy.*`, `neutral.*`, `dark.*`, `rounded-fotiva-*`, `font-heading` = Plus Jakarta Sans, `font-sans` = DM Sans).
 - `src/lib/eventStore.ts` — **capa de datos**: tipos (`EventData`, `EventPhoto`, `PhotoReaction`), `generateCode`, CRUD de eventos/fotos, subida a Storage (con progreso vía XHR), miniaturas de video, dimensiones, reacciones, `getGuestId`, URLs públicas con transformación (`thumb` 600px / `large` 1600px / `original`).
 - `src/lib/brand.ts` — constantes de marca (nombre, dominio, título, descripción); `vite.config.ts` las inyecta en `index.html` vía marcadores `%BRAND_*%`.
 - `src/lib/utils.ts` — helper `cn()` (clsx + tailwind-merge).
@@ -95,13 +95,13 @@ Bucket público `event-photos`. Policies en `storage.objects`: SELECT y INSERT a
 - Acceso a datos como funciones `async` en `eventStore.ts` que lanzan el `error` de Supabase (`if (error) throw error`); las páginas hacen `try/catch` y muestran toast.
 - Suscripciones realtime en `useEffect` con `supabase.channel(...).on('postgres_changes', …)` y limpieza con `supabase.removeChannel`.
 - Páginas protegidas: `useAuth()` + `useEffect` que hace `navigate('/auth')` si no hay usuario (no hay componente de ruta protegida).
-- Estilos: clases Tailwind con tokens semánticos (`bg-background`, `text-primary`, `bg-gradient-gold`, `shadow-gold`, `font-display`); colores siempre **HSL** vía variables CSS. Mobile-first (la subida es desde el celular).
+- Estilos: clases Tailwind con tokens semánticos (`bg-background`, `text-primary`, `bg-brand-primary`, `shadow-brand`, `font-heading`); colores siempre **HSL** vía variables CSS. Mobile-first (la subida es desde el celular).
 - Los tipos de fila vienen de `Database` (autogenerado); en `eventStore.ts` se castea `media_type` a `'image' | 'video'`.
-- Deuda conocida (no replicar): `Auth.tsx`, `MyEvents.tsx`, `EventDashboard.tsx` y `PhotoGallery.tsx` llaman a `supabase` directamente en vez de pasar por `eventStore.ts`; `EventDashboard.tsx` usa un valor `hsl(30, 10%, 15%)` literal en el QR; `photo_reactions` y `event_photos` tienen RLS totalmente abierta; `toggleReaction` ignora errores; `event_photos` y `storage.objects` no tienen policies de DELETE, por lo que hoy es imposible borrar una foto vía API.
+- Deuda conocida (no replicar): `Auth.tsx`, `MyEvents.tsx`, `EventDashboard.tsx` y `PhotoGallery.tsx` llaman a `supabase` directamente en vez de pasar por `eventStore.ts`; `photo_reactions` y `event_photos` tienen RLS totalmente abierta; `toggleReaction` ignora errores; `event_photos` y `storage.objects` no tienen policies de DELETE, por lo que hoy es imposible borrar una foto vía API.
 
 ## Trampas conocidas para refactorizaciones
 
-- **Tokens de diseño desfasados de la marca.** Los tokens actuales (`gold`, `cream`, `gradient-gold`/`bg-gradient-gold`, `text-gradient-gold`, `shadow-gold`, Playfair Display) corresponden a una identidad de marca anterior. La marca vigente es Fotiva (violeta `#635BFF`, Plus Jakarta Sans + DM Sans). Cualquier cambio de tokens debe migrar **TODOS** los usos de las clases viejas, no solo agregar las nuevas.
+- **Tokens de diseño.** Migrados a Fotiva (violeta `#635BFF`, Plus Jakarta Sans + DM Sans); las clases `gold`, `cream`, `gradient-gold`, `shadow-gold` y `font-display` ya no existen. Los radios de Fotiva son `rounded-fotiva-*`; la escala de Tailwind no se redefine. `success`/`error` solo para íconos y rellenos; para texto, `success-text`/`error-text`. Igual con `energy.coral`: con texto blanco el fondo es `energy.coralDeep`.
 - **Acceso directo a `supabase`.** `Auth.tsx`, `MyEvents.tsx`, `EventDashboard.tsx` y `PhotoGallery.tsx` llaman a `supabase` directamente. Cualquier cambio en la capa de datos o de URLs debe tocar esos cuatro archivos además de `eventStore.ts`.
 - **No existe `supabase/functions/`.** La primera Edge Function requiere crear y configurar ese directorio (y su entrada en `supabase/config.toml`).
 - **Esquema laxo.** `events.date` es `text` en vez de `date`; `events.user_id` es nullable; `media_type` no tiene CHECK constraint.

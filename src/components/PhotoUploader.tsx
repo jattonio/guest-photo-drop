@@ -125,16 +125,16 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => cameraInputRef.current?.click()}
-          className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-gold/30 bg-cream/50 hover:border-gold hover:bg-cream transition-all active:scale-95"
+          className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-brand-primary/30 bg-brand-soft/50 hover:border-brand-primary hover:bg-brand-soft transition-all active:scale-95"
         >
-          <Camera className="w-8 h-8 text-gold" />
+          <Camera className="w-8 h-8 text-brand-primary" />
           <span className="text-sm font-medium text-foreground">Tomar foto o video</span>
         </button>
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-gold/30 bg-cream/50 hover:border-gold hover:bg-cream transition-all active:scale-95"
+          className="flex flex-col items-center gap-2 p-6 rounded-xl border-2 border-dashed border-brand-primary/30 bg-brand-soft/50 hover:border-brand-primary hover:bg-brand-soft transition-all active:scale-95"
         >
-          <ImagePlus className="w-8 h-8 text-gold" />
+          <ImagePlus className="w-8 h-8 text-brand-primary" />
           <span className="text-sm font-medium text-foreground">Galería</span>
         </button>
       </div>
@@ -187,7 +187,7 @@ const PhotoUploader = ({ eventId, onPhotosUploaded }: PhotoUploaderProps) => {
           <Button
             onClick={handleUpload}
             disabled={uploading || uploaded}
-            className="relative overflow-hidden w-full bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 h-12 text-base"
+            className="relative overflow-hidden w-full bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark h-12 text-base"
           >
             {uploaded ? (
               <>
