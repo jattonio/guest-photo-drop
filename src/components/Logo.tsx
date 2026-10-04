@@ -9,19 +9,29 @@ import { cn } from '@/lib/utils';
  * "fotiva" en Plus Jakarta Sans 800 (tracking -0.04em). La "o" es un diafragma de
  * seis aspas; la "i" es la i sin punto (ı) con un destello de cuatro puntas encima.
  *
- * Los colores del diafragma y del destello son identidad del logotipo y NO cambian
- * con el tema ni con la variante; solo cambia el color de la palabra.
+ * El destello y la paleta del diafragma sobre fondo claro son identidad del logotipo.
+ * La palabra cambia de color según la variante; el diafragma ajusta su escala de
+ * violetas para no perderse sobre fondos oscuros (dark) ni sobre el violeta (on-brand).
  */
 
-// Constantes locales del logotipo (excepción deliberada a "sin HEX en componentes").
-const BLADE_COLORS = ['#635BFF', '#8A83FF', '#4038C9'];
-// Sobre violeta de marca la escala se invierte (como el app icon): aspas blancas y
-// violetas claros, apertura en violeta oscuro.
-const BLADE_COLORS_ON_BRAND = ['#FFFFFF', '#EEECFF', '#8A83FF'];
-const APERTURE_ON_BRAND = '#4038C9';
-const SPARKLE_COLOR = '#FF7A45';
-
 export type LogoVariant = 'light' | 'dark' | 'on-brand';
+
+// Constantes locales del logotipo (excepción deliberada a "sin HEX en componentes").
+interface DiaphragmPalette {
+  blades: string[];
+  aperture: string;
+  stroke: string;
+  strokeOpacity: number;
+}
+const DIAPHRAGM: Record<LogoVariant, DiaphragmPalette> = {
+  // Fondo claro: escala original.
+  light: { blades: ['#635BFF', '#8A83FF', '#4038C9'], aperture: 'var(--brand-soft)', stroke: 'white', strokeOpacity: 0.35 },
+  // Fondo oscuro: violetas claros; #4038C9 se pierde sobre #17152A.
+  dark: { blades: ['#8A83FF', '#635BFF', '#EEECFF'], aperture: 'var(--brand-soft)', stroke: '#17152A', strokeOpacity: 0.5 },
+  // Sobre violeta de marca (como el app icon): aspas blancas y violetas claros, apertura oscura.
+  'on-brand': { blades: ['#FFFFFF', '#EEECFF', '#8A83FF'], aperture: '#4038C9', stroke: '#4038C9', strokeOpacity: 0.5 },
+};
+const SPARKLE_COLOR = '#FF7A45';
 
 // light: fondo claro · dark: fondo oscuro · on-brand: sobre violeta de marca
 const WORD_CLASS: Record<LogoVariant, string> = {
@@ -65,21 +75,24 @@ const BLADES = hex.map((v, i) => {
 });
 const APERTURE = `M${hex.map(([x, y]) => `${fmt(x)} ${fmt(y)}`).join(' L')} Z`;
 
-const Diaphragm = ({ onBrand }: { onBrand: boolean }) => (
-  <svg viewBox="0 0 100 100" aria-hidden="true" className="inline-block h-[0.6em] w-[0.6em] shrink-0 overflow-visible">
-    {BLADES.map((d, i) => (
-      <path
-        key={i}
-        d={d}
-        fill={(onBrand ? BLADE_COLORS_ON_BRAND : BLADE_COLORS)[i % 3]}
-        stroke={onBrand ? APERTURE_ON_BRAND : 'white'}
-        strokeOpacity={onBrand ? 0.5 : 0.35}
-        strokeWidth="1"
-      />
-    ))}
-    <path d={APERTURE} fill={onBrand ? APERTURE_ON_BRAND : 'var(--brand-soft)'} />
-  </svg>
-);
+const Diaphragm = ({ variant }: { variant: LogoVariant }) => {
+  const palette = DIAPHRAGM[variant];
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className="inline-block h-[0.6em] w-[0.6em] shrink-0 overflow-visible">
+      {BLADES.map((d, i) => (
+        <path
+          key={i}
+          d={d}
+          fill={palette.blades[i % palette.blades.length]}
+          stroke={palette.stroke}
+          strokeOpacity={palette.strokeOpacity}
+          strokeWidth="1"
+        />
+      ))}
+      <path d={APERTURE} fill={palette.aperture} />
+    </svg>
+  );
+};
 
 const Sparkle = () => (
   <svg
@@ -110,7 +123,7 @@ const Logo = ({ variant = 'light', size = 28, className }: LogoProps) => (
     )}
   >
     <span aria-hidden="true">f</span>
-    <Diaphragm onBrand={variant === 'on-brand'} />
+    <Diaphragm variant={variant} />
     <span aria-hidden="true">t</span>
     <span aria-hidden="true" className="relative">
       ı<Sparkle />
