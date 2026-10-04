@@ -51,7 +51,7 @@ const Index = () => {
                 size="sm"
                 variant="outline"
                 onClick={() => navigate('/my-events')}
-                className="bg-background/80 backdrop-blur border-gold/30"
+                className="bg-background/80 backdrop-blur border-brand-primary/30"
               >
                 <User className="w-4 h-4 mr-1" /> Mis eventos
               </Button>
@@ -69,7 +69,7 @@ const Index = () => {
               size="sm"
               variant="outline"
               onClick={() => navigate('/auth')}
-              className="bg-background/80 backdrop-blur border-gold/30"
+              className="bg-background/80 backdrop-blur border-brand-primary/30"
             >
               <LogIn className="w-4 h-4 mr-1" /> Iniciar sesión
             </Button>
@@ -82,9 +82,9 @@ const Index = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-foreground/30 via-foreground/20 to-background" />
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
           <div className="animate-float mb-4">
-            <Camera className="w-12 h-12 text-gold" />
+            <Camera className="w-12 h-12 text-brand-primary" />
           </div>
-          <h1 className="font-display text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">{BRAND_NAME}</h1>
+          <h1 className="font-heading text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">{BRAND_NAME}</h1>
           <p className="text-background/90 text-lg md:text-xl max-w-md drop-shadow">
             Captura cada momento de tu evento. Todos los recuerdos, en un solo lugar.
           </p>
@@ -94,8 +94,8 @@ const Index = () => {
       <div className="max-w-md mx-auto px-6 -mt-12 relative z-10 space-y-6 pb-12">
         <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
           <div className="flex items-center gap-2 mb-4">
-            <QrCode className="w-5 h-5 text-gold" />
-            <h2 className="font-display text-lg font-semibold">Unirse a un evento</h2>
+            <QrCode className="w-5 h-5 text-brand-primary" />
+            <h2 className="font-heading text-lg font-semibold">Unirse a un evento</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
             Ingresa el código que está en tu mesa para comenzar a subir fotos
@@ -112,7 +112,7 @@ const Index = () => {
             <Button
               onClick={handleJoinEvent}
               disabled={joining}
-              className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90 px-6"
+              className="bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark px-6"
             >
               <ArrowRight className="w-5 h-5" />
             </Button>
@@ -121,8 +121,8 @@ const Index = () => {
 
         <div className="bg-card rounded-2xl p-6 shadow-lg border border-border">
           <div className="flex items-center gap-2 mb-4">
-            <PartyPopper className="w-5 h-5 text-gold" />
-            <h2 className="font-display text-lg font-semibold">Crear un evento</h2>
+            <PartyPopper className="w-5 h-5 text-brand-primary" />
+            <h2 className="font-heading text-lg font-semibold">Crear un evento</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">
             ¿Organizas una fiesta o evento? Crea tu espacio para que tus invitados compartan fotos
@@ -130,7 +130,7 @@ const Index = () => {
           <Button
             onClick={() => user ? navigate('/create') : navigate('/auth')}
             variant="outline"
-            className="w-full border-gold/30 text-foreground hover:bg-cream hover:border-gold"
+            className="w-full border-brand-primary/30 text-foreground hover:bg-brand-soft hover:border-brand-primary"
           >
             {user ? 'Crear evento' : 'Inicia sesión para crear'}
             <ArrowRight className="w-4 h-4 ml-2" />

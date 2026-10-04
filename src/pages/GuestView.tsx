@@ -60,7 +60,7 @@ const GuestView = () => {
   if (!event) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-6 py-8">
         <button
           onClick={() => navigate('/')}
@@ -72,7 +72,7 @@ const GuestView = () => {
 
         <div className="text-center mb-6">
           <div className="text-4xl mb-2">🎉</div>
-          <h1 className="font-display text-2xl font-bold">{event.name}</h1>
+          <h1 className="font-heading text-2xl font-bold">{event.name}</h1>
           {event.host_name && (
             <p className="text-sm text-muted-foreground mt-1">
               Organiza: {event.host_name}
@@ -85,7 +85,7 @@ const GuestView = () => {
             onClick={() => setTab('upload')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'upload'
-                ? 'bg-gradient-gold text-primary-foreground shadow-gold'
+                ? 'bg-brand-primary text-primary-foreground shadow-brand'
                 : 'bg-card border border-border text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -96,7 +96,7 @@ const GuestView = () => {
             onClick={() => setTab('gallery')}
             className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
               tab === 'gallery'
-                ? 'bg-gradient-gold text-primary-foreground shadow-gold'
+                ? 'bg-brand-primary text-primary-foreground shadow-brand'
                 : 'bg-card border border-border text-muted-foreground hover:text-foreground'
             }`}
           >

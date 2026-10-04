@@ -32,7 +32,7 @@ const MyEvents = () => {
   if (authLoading || loading) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-hero">
+    <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-6 py-8">
         <button
           onClick={() => navigate('/')}
@@ -43,11 +43,11 @@ const MyEvents = () => {
         </button>
 
         <div className="flex items-center justify-between mb-6">
-          <h1 className="font-display text-2xl font-bold">Mis eventos</h1>
+          <h1 className="font-heading text-2xl font-bold">Mis eventos</h1>
           <Button
             onClick={() => navigate('/create')}
             size="sm"
-            className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90"
+            className="bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark"
           >
             <Plus className="w-4 h-4 mr-1" /> Nuevo
           </Button>
@@ -59,7 +59,7 @@ const MyEvents = () => {
             <p className="text-muted-foreground mb-4">Aún no has creado ningún evento</p>
             <Button
               onClick={() => navigate('/create')}
-              className="bg-gradient-gold text-primary-foreground shadow-gold hover:opacity-90"
+              className="bg-brand-primary text-primary-foreground shadow-brand hover:bg-brand-dark"
             >
               Crear mi primer evento
             </Button>
@@ -70,9 +70,9 @@ const MyEvents = () => {
               <button
                 key={event.id}
                 onClick={() => navigate(`/dashboard/${event.id}`)}
-                className="w-full bg-card rounded-2xl p-4 shadow border border-border text-left hover:border-gold/40 transition-colors"
+                className="w-full bg-card rounded-2xl p-4 shadow border border-border text-left hover:border-brand-primary/40 transition-colors"
               >
-                <h3 className="font-display font-semibold">{event.name}</h3>
+                <h3 className="font-heading font-semibold">{event.name}</h3>
                 {event.date && (
                   <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
                     <Calendar className="w-3 h-3" />
