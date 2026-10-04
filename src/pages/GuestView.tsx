@@ -5,6 +5,7 @@ import { getEventByCode, getEventPhotos, EventData, EventPhoto } from '@/lib/eve
 import { supabase } from '@/integrations/supabase/client';
 import PhotoUploader from '@/components/PhotoUploader';
 import PhotoGallery from '@/components/PhotoGallery';
+import LegalLinks from '@/components/LegalLinks';
 
 const GuestView = () => {
   const { code } = useParams<{ code: string }>();
@@ -110,6 +111,8 @@ const GuestView = () => {
             <PhotoUploader eventId={event.id} onPhotosUploaded={refreshPhotos} />
           </div>
         )}
+
+        {tab === 'upload' && <LegalLinks className="mt-6" />}
       </div>
 
       {tab === 'gallery' && (

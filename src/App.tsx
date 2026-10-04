@@ -10,6 +10,9 @@ import CreateEvent from "./pages/CreateEvent.tsx";
 import MyEvents from "./pages/MyEvents.tsx";
 import EventDashboard from "./pages/EventDashboard.tsx";
 import GuestView from "./pages/GuestView.tsx";
+import Privacy from "./pages/legal/Privacy.tsx";
+import Terms from "./pages/legal/Terms.tsx";
+import ContentPolicy from "./pages/legal/ContentPolicy.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +31,9 @@ const App = () => (
             <Route path="/my-events" element={<MyEvents />} />
             <Route path="/dashboard/:id" element={<EventDashboard />} />
             <Route path="/event/:code" element={<GuestView />} />
+            <Route path="/privacidad" element={<Privacy />} />
+            <Route path="/terminos" element={<Terms />} />
+            <Route path="/contenido" element={<ContentPolicy />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

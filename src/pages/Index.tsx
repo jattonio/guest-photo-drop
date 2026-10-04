@@ -7,6 +7,7 @@ import { getEventByCode } from '@/lib/eventStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { BRAND_NAME } from '@/lib/brand';
+import LegalLinks from '@/components/LegalLinks';
 import heroImage from '@/assets/hero-party.jpg';
 
 const Index = () => {
@@ -149,6 +150,10 @@ const Index = () => {
             </div>
           ))}
         </div>
+
+        <footer className="pt-6">
+          <LegalLinks />
+        </footer>
       </div>
     </div>
   );
