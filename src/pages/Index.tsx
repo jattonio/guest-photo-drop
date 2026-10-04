@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { getEventByCode } from '@/lib/eventStore';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { BRAND_NAME } from '@/lib/brand';
 import heroImage from '@/assets/hero-party.jpg';
 
 const Index = () => {
@@ -83,7 +84,7 @@ const Index = () => {
           <div className="animate-float mb-4">
             <Camera className="w-12 h-12 text-gold" />
           </div>
-          <h1 className="font-display text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">SnapFiesta</h1>
+          <h1 className="font-display text-4xl md:text-6xl font-bold text-background mb-3 drop-shadow-lg">{BRAND_NAME}</h1>
           <p className="text-background/90 text-lg md:text-xl max-w-md drop-shadow">
             Captura cada momento de tu evento. Todos los recuerdos, en un solo lugar.
           </p>

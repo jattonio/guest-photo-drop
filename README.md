@@ -1,4 +1,4 @@
-# Event Snapshare
+# Fotiva
 
 crea una aplicacion que la contraten usuarios que van a tener un evento o fiesta y que sus invitados puedan subir fotos atraves de la aplicacion la cual van a acceder a traves de un qr que estara impreso en las mesas de cada invitado. la aplicacion debe de ser muy facil de utilizar y eficiente para subir las fotos desde el celular de cada uno de los invitados
 
@@ -16,11 +16,11 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+Prefer working locally? You need [bun](https://bun.sh).
 
 ```sh
 git clone <this-repository-url>
 cd <repository-name>
-npm i
-npm run dev
+bun install
+bun run dev
 ```
