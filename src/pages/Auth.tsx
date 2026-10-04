@@ -39,8 +39,8 @@ const Auth = () => {
         toast.success('¡Bienvenido!');
         navigate('/');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Error de autenticación');
+    } catch (err) {
+      toast.error(err instanceof Error && err.message ? err.message : 'Error de autenticación');
     } finally {
       setLoading(false);
     }

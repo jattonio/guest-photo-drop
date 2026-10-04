@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 // Color desde una variable HEX; <alpha-value> lo sustituye Tailwind al usar /30, /50…
 const fotivaColor = (cssVar: string) =>
@@ -138,5 +139,5 @@ export default {
       },
     },
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

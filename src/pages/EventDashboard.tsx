@@ -25,7 +25,7 @@ const EventDashboard = () => {
     }
     if (!id) return;
     getEventById(id).then(e => {
-      if (e && (e as any).user_id === user.id) {
+      if (e && e.user_id === user.id) {
         setEvent(e);
         getEventPhotos(e.id).then(setPhotos);
       } else {
